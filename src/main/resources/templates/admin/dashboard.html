@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Admin Dashboard - MAGERWA</title>
+</head>
+<body>
+    <div layout:fragment="content">
+        <h1>Admin Dashboard</h1>
+        
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Countries</h5>
+                        <p class="card-text display-6" th:text="${countries.size()}">0</p>
+                        <a href="/admin/countries" class="btn btn-primary">Manage</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Departments</h5>
+                        <p class="card-text display-6" th:text="${departments.size()}">0</p>
+                        <a href="/admin/departments" class="btn btn-primary">Manage</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Entities</h5>
+                        <p class="card-text display-6" th:text="${entities.size()}">0</p>
+                        <a href="/admin/entities" class="btn btn-primary">Manage</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Modules</h5>
+                        <p class="card-text display-6" th:text="${modules.size()}">0</p>
+                        <a href="/admin/modules" class="btn btn-primary">Manage</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Sections</h5>
+                        <p class="card-text display-6" th:text="${sections.size()}">0</p>
+                        <a href="/admin/sections" class="btn btn-primary">Manage</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
