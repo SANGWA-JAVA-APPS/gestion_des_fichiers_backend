@@ -579,3 +579,16 @@ there is an error in CommThirdPartyRepository because the usage of Page<CommThir
 	=> third_party_claims 	 	(id, date_time, doneby, docId, reference, description, date_claim, department_in_charge, 												statut_id)
 
 
+- a document will have the opening status called: "active" and the other to keep in a logical non editable location called "archived" and "expired", which should
+	be alterted to admin before 2 weeks before the expiry.
+- so in the backend on creating any document please put the default status as "active" using @prepersit, follow the structure of inheritance and find the 
+	proper model or entity that holds te status.
+- so do that to all models, but go one by one
+- in frontend the post request should not supply the status as it will be defaulted in the backend, so in frontend check all forms and see only if the status is there and 
+	remove if.
+- after logging in, differentiate the users and prepare the dashboards, 
+- by using mcp insert into status these: applicable, suspended, replaced, canceled, in progress, valid, rejetcted, rental, solid, free, expired
+by using mcp, analyse the database where we want to track doc.
+
+- in the backend make a @scheduled cron that runs every 30 minutes to check expirent component, follow the /document context-based design, find the suitable related existing controller or service
+	to implement that 
