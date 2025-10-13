@@ -20,9 +20,12 @@ public class CorsConfig {
             "http://localhost:3000",
             "http://localhost:5173", // Vite default port
             "http://localhost:4173", // Vite preview port
+            "http://localhost:8104", // Backend on localhost
             "http://127.0.0.1:3000",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:4173",
+            "http://127.0.0.1:8104",
+            "https://ingenzi.codeguru-pro.com", // Production frontend
             "https://gestiondesfichier.codeguru-pro.com",
             "https://gestiondesfichier.codeguru-pro.com:8104",
             "*" // Allow all origins for mobile apps (they often don't send Origin header)

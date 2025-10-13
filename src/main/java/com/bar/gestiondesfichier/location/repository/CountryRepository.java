@@ -41,4 +41,7 @@ public interface CountryRepository extends BaseRepository<Country> {
     boolean existsByIsoCodeAndActiveTrue(String isoCode);
     
     boolean existsByNameIgnoreCaseAndActiveTrue(String name);
+    
+    // Count method for dashboard statistics
+    long countByActiveTrue();
 }

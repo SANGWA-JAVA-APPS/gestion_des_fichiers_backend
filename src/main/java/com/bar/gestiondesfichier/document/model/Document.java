@@ -63,6 +63,9 @@ public class Document {
     @Column(name = "expiry_alert_sent")
     private boolean expiryAlertSent = false;
 
+    @Column(name = "version", length = 50)
+    private String version;
+
     @Column(nullable = false)
     private boolean active = true;
 

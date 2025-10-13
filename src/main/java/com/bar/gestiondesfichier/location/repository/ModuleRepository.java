@@ -57,4 +57,7 @@ public interface ModuleRepository extends BaseRepository<Module> {
     long countByLocationEntityIdAndActiveTrue(Long locationEntityId);
     
     long countByModuleTypeAndActiveTrue(ModuleType moduleType);
+    
+    // Count method for dashboard statistics
+    long countByActiveTrue();
 }

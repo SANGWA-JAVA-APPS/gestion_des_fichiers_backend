@@ -586,9 +586,104 @@ there is an error in CommThirdPartyRepository because the usage of Page<CommThir
 - so do that to all models, but go one by one
 - in frontend the post request should not supply the status as it will be defaulted in the backend, so in frontend check all forms and see only if the status is there and 
 	remove if.
-- after logging in, differentiate the users and prepare the dashboards, 
-- by using mcp insert into status these: applicable, suspended, replaced, canceled, in progress, valid, rejetcted, rental, solid, free, expired
+- after logging in, differentiate the users and prepare the dashboards so that after logging in , the system shows the dashboard first. 
+- by using mcp, check the current  data available from docstatus table and insert these values: applicable, suspended, replaced, canceled, in progress, valid, rejetcted, rental, solid, free, expired
 by using mcp, analyse the database where we want to track doc.
 
-- in the backend make a @scheduled cron that runs every 30 minutes to check expirent component, follow the /document context-based design, find the suitable related existing controller or service
-	to implement that 
+- in the backend make a @scheduled cron that runs every 30 minutes to check expirent document from the docstatus table and just use 
+	System.out.println to print the total number if documents.
+- you have changed he dashboard, it is good looking, but i want you to remind that under the location there were:
+	country, entity, module and section, so please use mcp and verify the entitties structure and add the corresponding
+	reqursts in the frontend, check if the components/forms dont exist already and prepare/create them.
+
+- On the navbar in frontend, i want you to add three buttons close to the logout/login button, one called archive, expiry, another, active docs
+- are the buttons' components you created on the navbar have a list that only show the documents based on their statuses (archive, expiry, another, active)?
+	if not please use the same DashboardController.java to filter by those status and called from frontend
+- on the module component, there is this error: SectionsComponent.jsx:182 Uncaught TypeError: sections.map is not a function
+    at SectionsComponent (SectionsComponent.jsx:182:31), please check of the backend is returning a proper response and then fix the frontend.
+- Like a database admiinistrator, and by using the mcp, analyse the database and tell the dashboard items (totals) that the file management administrator
+	would be interested in, consider the documents statuses, the expiring documents(total), archived docs, deactivated users(active-0).
+- propose as many details to be displayed on the dashboard as possible.
+- please check if the methods the reposotories(accountRepository,countryRepository locationEntityRepository,  moduleRepository, sectionRepository )
+ methods exists:
+  // User Statistics
+            Map<String, Object> userStats = new HashMap<>();
+            userStats.put("totalUsers", accountRepository.count());
+            userStats.put("activeUsers", accountRepository.countByActiveTrue());
+            userStats.put("inactiveUsers", accountRepository.countByActiveFalse());
+            stats.put("users", userStats);
+            
+            // Location Statistics
+            Map<String, Object> locationStats = new HashMap<>();
+            locationStats.put("totalCountries", countryRepository.countByActiveTrue());
+            locationStats.put("totalEntities", locationEntityRepository.countByActiveTrue());
+            locationStats.put("totalModules", moduleRepository.countByActiveTrue());
+            locationStats.put("totalSections", sectionRepository.countByActiveTrue());
+- is there a way you can group the users menu items from the frontend navbar into menu dropdown menus, like the following:
+	users: accounts, roles
+	documents: it remains the way it is 
+	location: country, entity, module, sections
+
+
+- are the buttons' components you created on the navbar have a list that only show the documents based on their statuses (archive, expiry, another, active)?
+	if not please use the same DashboardController.java to filter by those status and called from frontend
+- now on the logout i want you to change it from buton to the dropdown menu , and put 
+	1. my profile which will direct to the component, the component will retrieve the user by users id, so check the login component of it is 
+	retaining the userid of the logged in user.
+	2. if yes then use that id to retrieve the users information. in the backend use the AccountRepository.java and check if the query
+	does not already exist if not create it and use it on the backend (my profile).
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+-
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+applicable, suspended, remplaced, annulé, en_cours, acquis, vendu, transféré, litigieux, validé
+- active
+- archive
+- expired
+
+
+
+
+
+
+
+
+
+
