@@ -40,7 +40,7 @@ public class AuthController {
     @Operation(summary = "Login user", description = "Authenticate user with username and password")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Login successful"),
-        @ApiResponse(responseCode = "401", description = "Invalid credentials")
+        @ApiResponse(responseCode = "401", description = "Invalid credentials!")
     })
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequest, HttpServletRequest request) {
         System.out.println("=== LOGIN REQUEST DEBUG ===");
@@ -84,8 +84,10 @@ public class AuthController {
                     LoginResponseDto response = new LoginResponseDto();
                     response.setSuccess(true);
                     response.setMessage("Login successful");
+                    response.setUserId(account.getId());
                     response.setUsername(account.getUsername());
                     response.setFullName(account.getFullName());
+                    response.setEmail(account.getEmail());
                     response.setRole(account.getAccountCategory().getName());
                     response.setToken(jwtToken);
                     response.setRefreshToken(refreshToken);

@@ -53,4 +53,7 @@ public interface LocationEntityRepository extends BaseRepository<LocationEntity>
     long countByCountryIdAndActiveTrue(Long countryId);
     
     long countByEntityTypeAndActiveTrue(EntityType entityType);
+    
+    // Count method for dashboard statistics
+    long countByActiveTrue();
 }

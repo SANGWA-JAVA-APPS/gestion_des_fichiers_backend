@@ -22,7 +22,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/location/sections")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:8081"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "http://localhost:8104", "https://ingenzi.codeguru-pro.com"})
 @Tag(name = "Section Management", description = "Section CRUD operations with pagination")
 public class SectionController {
 

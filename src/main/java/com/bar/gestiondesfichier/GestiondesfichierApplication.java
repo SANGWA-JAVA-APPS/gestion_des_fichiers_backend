@@ -8,8 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class GestiondesfichierApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(GestiondesfichierApplication.class, args);
-	}
+    public static void main(String[] args) {
+        System.out.println("Testing the workflow");
+        SpringApplication.run(GestiondesfichierApplication.class, args);
+    }
 
 }

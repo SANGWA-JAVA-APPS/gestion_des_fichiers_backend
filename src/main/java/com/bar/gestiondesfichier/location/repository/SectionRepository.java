@@ -75,4 +75,7 @@ public interface SectionRepository extends BaseRepository<Section> {
     long countByAccessLevelAndActiveTrue(AccessLevel accessLevel);
     
     long countByFloorNumberAndActiveTrue(Integer floorNumber);
+    
+    // Count method for dashboard statistics
+    long countByActiveTrue();
 }

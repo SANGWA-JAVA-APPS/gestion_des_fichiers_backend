@@ -3,8 +3,12 @@ package com.bar.gestiondesfichier.document.controller;
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
 import com.bar.gestiondesfichier.document.model.AccordConcession;
+import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.AccordConcessionProjection;
 import com.bar.gestiondesfichier.document.repository.AccordConcessionRepository;
+import com.bar.gestiondesfichier.document.repository.DocumentRepository;
+import com.bar.gestiondesfichier.entity.Account;
+import com.bar.gestiondesfichier.repository.AccountRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,10 +19,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * REST controller for Concession Agreement management with 20-record default
@@ -33,9 +41,16 @@ public class AccordConcessionController {
     private static final Logger log = LoggerFactory.getLogger(AccordConcessionController.class);
 
     private final AccordConcessionRepository accordConcessionRepository;
+    private final DocumentRepository documentRepository;
+    private final AccountRepository accountRepository;
 
-    public AccordConcessionController(AccordConcessionRepository accordConcessionRepository) {
+    public AccordConcessionController(
+            AccordConcessionRepository accordConcessionRepository,
+            DocumentRepository documentRepository,
+            AccountRepository accountRepository) {
         this.accordConcessionRepository = accordConcessionRepository;
+        this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
     }
 
     @GetMapping
@@ -87,8 +102,7 @@ public class AccordConcessionController {
     @Operation(summary = "Get concession agreement by ID", description = "Retrieve a specific concession agreement record by ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Concession agreement retrieved successfully"),
-        @ApiResponse(responseCode = "400", description = "Concession agreement not found or invalid ID")
-    })
+        @ApiResponse(responseCode = "400", description = "Concession agreement not found or invalid ID")})
     public ResponseEntity<Map<String, Object>> getAccordConcessionById(@PathVariable Long id) {
         try {
             if (id == null || id <= 0) {
@@ -128,15 +142,46 @@ public class AccordConcessionController {
                 return ResponseUtil.badRequest("DoneBy (Account) is required");
             }
 
-            if (accordConcession.getDocument() == null) {
-                return ResponseUtil.badRequest("Document is required");
-            }
-
             if (accordConcession.getStatus() == null) {
                 return ResponseUtil.badRequest("Status is required");
             }
 
+            // Get the current user (owner) for the document
+            Account owner = accordConcession.getDoneBy();
+
+            // Verify the account exists
+            Optional<Account> accountOpt = accountRepository.findById(owner.getId());
+            if (accountOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Account not found with ID: " + owner.getId());
+            }
+
+            Account actualOwner = accountOpt.get();
+
+            // Create a new Document record in the files table with random data
+            Document document = new Document();
+
+            // Generate random/default data for the document
+            String uniqueFileName = "accord_concession_" + UUID.randomUUID().toString() + ".pdf";
+            document.setFileName(uniqueFileName);
+            document.setOriginalFileName("Accord_Concession_" + accordConcession.getNumeroAccord() + ".pdf");
+            document.setContentType("application/pdf");
+            document.setFileSize(1024L * 256L); // Random size: 256 KB
+            document.setFilePath("/uploads/accord_concession/" + uniqueFileName);
+            document.setOwner(actualOwner);
+            document.setExpirationDate(LocalDateTime.now().plusYears(5)); // Default: expires in 5 years
+            document.setVersion("1.0"); // Default version
+            document.setActive(true);
+
+            // Save the document first
+            Document savedDocument = documentRepository.save(document);
+            log.info("Created document with ID: {} for concession agreement: {}",
+                    savedDocument.getId(), accordConcession.getNumeroAccord());
+
+            // Link the saved document to the accord concession
+            accordConcession.setDocument(savedDocument);
             accordConcession.setActive(true);
+
+            // Save the accord concession
             AccordConcession savedAccordConcession = accordConcessionRepository.save(accordConcession);
 
             return ResponseUtil.success(savedAccordConcession, "Concession agreement created successfully");
