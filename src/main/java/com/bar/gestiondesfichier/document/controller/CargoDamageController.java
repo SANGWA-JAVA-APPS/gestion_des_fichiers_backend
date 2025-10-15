@@ -3,8 +3,14 @@ package com.bar.gestiondesfichier.document.controller;
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
 import com.bar.gestiondesfichier.document.model.CargoDamage;
+import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.CargoDamageProjection;
 import com.bar.gestiondesfichier.document.repository.CargoDamageRepository;
+import com.bar.gestiondesfichier.document.repository.DocumentRepository;
+import com.bar.gestiondesfichier.document.service.DocumentUploadService;
+import com.bar.gestiondesfichier.entity.Account;
+import com.bar.gestiondesfichier.repository.AccountRepository;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,8 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
@@ -32,6 +42,9 @@ import java.util.Optional;
 public class CargoDamageController {
 
     private final CargoDamageRepository cargoDamageRepository;
+    private final DocumentUploadService documentUploadService;
+    private final DocumentRepository documentRepository;
+    private final AccountRepository accountRepository;
 
     @GetMapping
     @Operation(summary = "Get all cargo damage records", description = "Retrieve paginated list of cargo damage records with default 20 records per page")
@@ -105,22 +118,81 @@ public class CargoDamageController {
         }
     }
 
-    @PostMapping
+    @PostMapping(consumes = {"multipart/form-data"})
+    @Transactional
     @Operation(summary = "Create new cargo damage record", description = "Create a new cargo damage record")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Cargo damage record created successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request data"),
         @ApiResponse(responseCode = "403", description = "Session expired")
     })
-    public ResponseEntity<Map<String, Object>> createCargoDamage(@RequestBody CargoDamage cargoDamage) {
+    public ResponseEntity<Map<String, Object>> createCargoDamage(
+            @RequestPart("cargoDamage") CargoDamage cargoDamage,
+            @RequestPart("file") MultipartFile file) {
         try {
             log.info("Creating new cargo damage record: {}", cargoDamage.getRefeRequest());
 
+            // Validate required fields
             if (cargoDamage.getRefeRequest() == null || cargoDamage.getRefeRequest().trim().isEmpty()) {
                 log.warn("Validation failed: refeRequest is required");
                 return ResponseUtil.badRequest("Reference request is required");
             }
 
+            if (cargoDamage.getDoneBy() == null) {
+                log.warn("Validation failed: DoneBy (Account) is required");
+                return ResponseUtil.badRequest("DoneBy (Account) is required");
+            }
+
+            if (cargoDamage.getStatus() == null) {
+                log.warn("Validation failed: Status is required");
+                return ResponseUtil.badRequest("Status is required");
+            }
+
+            // Verify account exists
+            Account actualOwner = accountRepository.findById(cargoDamage.getDoneBy().getId())
+                    .orElseThrow(() -> new RuntimeException("Account not found with ID: " + cargoDamage.getDoneBy().getId()));
+
+            // Validate file is provided (mandatory)
+            if (file == null || file.isEmpty()) {
+                log.warn("Validation failed: Document file is required");
+                return ResponseUtil.badRequest("Document file is required. Please upload a file to create the cargo damage record.");
+            }
+
+            // Upload file to cargo_damage folder
+            String filePath;
+            try {
+                filePath = documentUploadService.uploadFile(file, "cargo_damage");
+                log.info("File uploaded successfully to: {}", filePath);
+            } catch (IOException e) {
+                log.error("Failed to upload file", e);
+                return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
+            }
+
+            // Extract file metadata
+            String contentType = file.getContentType();
+            Long fileSize = file.getSize();
+            String fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
+            String uniqueFileName = Paths.get(filePath).getFileName().toString();
+            String originalFileName = documentUploadService.generateOriginalFileName(
+                    "Cargo_Damage",
+                    cargoDamage.getRefeRequest(),
+                    fileExtension
+            );
+
+            // Initialize and save document
+            Document document = documentUploadService.initializeDocument(
+                    uniqueFileName,
+                    originalFileName,
+                    contentType,
+                    fileSize,
+                    filePath,
+                    actualOwner
+            );
+            Document savedDocument = documentRepository.save(document);
+            log.info("Document saved with ID: {}", savedDocument.getId());
+
+            // Link document to cargo damage and save
+            cargoDamage.setDocument(savedDocument);
             cargoDamage.setActive(true);
             CargoDamage saved = cargoDamageRepository.save(cargoDamage);
 

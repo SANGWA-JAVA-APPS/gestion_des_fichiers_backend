@@ -7,6 +7,7 @@ import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.AccordConcessionProjection;
 import com.bar.gestiondesfichier.document.repository.AccordConcessionRepository;
 import com.bar.gestiondesfichier.document.repository.DocumentRepository;
+import com.bar.gestiondesfichier.document.service.DocumentUploadService;
 import com.bar.gestiondesfichier.entity.Account;
 import com.bar.gestiondesfichier.repository.AccountRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,14 +20,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * REST controller for Concession Agreement management with 20-record default
@@ -43,14 +44,17 @@ public class AccordConcessionController {
     private final AccordConcessionRepository accordConcessionRepository;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
+    private final DocumentUploadService documentUploadService;
 
     public AccordConcessionController(
             AccordConcessionRepository accordConcessionRepository,
             DocumentRepository documentRepository,
-            AccountRepository accountRepository) {
+            AccountRepository accountRepository,
+            DocumentUploadService documentUploadService) {
         this.accordConcessionRepository = accordConcessionRepository;
         this.documentRepository = documentRepository;
         this.accountRepository = accountRepository;
+        this.documentUploadService = documentUploadService;
     }
 
     @GetMapping
@@ -123,13 +127,16 @@ public class AccordConcessionController {
         }
     }
 
-    @PostMapping
-    @Operation(summary = "Create concession agreement", description = "Create a new concession agreement record")
+    @PostMapping(consumes = {"multipart/form-data"})
+    @Transactional
+    @Operation(summary = "Create concession agreement", description = "Create a new concession agreement record with file upload")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Concession agreement created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        @ApiResponse(responseCode = "400", description = "Invalid request data or missing file")
     })
-    public ResponseEntity<Map<String, Object>> createAccordConcession(@RequestBody AccordConcession accordConcession) {
+    public ResponseEntity<Map<String, Object>> createAccordConcession(
+            @RequestPart("accordConcession") AccordConcession accordConcession,
+            @RequestPart("file") MultipartFile file) {
         try {
             log.info("Creating new concession agreement: {}", accordConcession.getNumeroAccord());
 
@@ -154,28 +161,57 @@ public class AccordConcessionController {
             if (accountOpt.isEmpty()) {
                 return ResponseUtil.badRequest("Account not found with ID: " + owner.getId());
             }
-
             Account actualOwner = accountOpt.get();
 
-            // Create a new Document record in the files table with random data
-            Document document = new Document();
+            // Prepare variables for document metadata
+            String contentType;
+            String fileExtension;
+            String uniqueFileName;
+            String originalFileName;
+            String filePath;
+            long fileSize;
 
-            // Generate random/default data for the document
-            String uniqueFileName = "accord_concession_" + UUID.randomUUID().toString() + ".pdf";
-            document.setFileName(uniqueFileName);
-            document.setOriginalFileName("Accord_Concession_" + accordConcession.getNumeroAccord() + ".pdf");
-            document.setContentType("application/pdf");
-            document.setFileSize(1024L * 256L); // Random size: 256 KB
-            document.setFilePath("/uploads/accord_concession/" + uniqueFileName);
-            document.setOwner(actualOwner);
-            document.setExpirationDate(LocalDateTime.now().plusYears(5)); // Default: expires in 5 years
-            document.setVersion("1.0"); // Default version
-            document.setActive(true);
+            // Validate that file is provided (mandatory)
+            if (file == null || file.isEmpty()) {
+                log.warn("File upload is required but not provided for concession agreement: {}",
+                        accordConcession.getNumeroAccord());
+                return ResponseUtil.badRequest("Document file is required. Please upload a file to create the concession agreement.");
+            }
 
+            // Handle file upload
+            log.info("File upload detected: {}", file.getOriginalFilename());
+
+            // Upload file and get file path
+            try {
+                filePath = documentUploadService.uploadFile(file, "accord_concession");
+
+                // Extract information from uploaded file
+                contentType = file.getContentType();
+                fileSize = file.getSize();
+                fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
+
+                // Extract unique filename from path
+                uniqueFileName = Paths.get(filePath).getFileName().toString();
+
+                // Generate original filename
+                originalFileName = documentUploadService.generateOriginalFileName(
+                        "Accord_Concession",
+                        accordConcession.getNumeroAccord(),
+                        fileExtension
+                );
+
+                log.info("File uploaded successfully: {}", filePath);
+            } catch (IOException e) {
+                log.error("Failed to upload file", e);
+                return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
+            }
+
+            // Initialize the document using DocumentUploadService
+            Document document = documentUploadService.initializeDocument(uniqueFileName, originalFileName, contentType, fileSize, filePath, actualOwner);
             // Save the document first
             Document savedDocument = documentRepository.save(document);
-            log.info("Created document with ID: {} for concession agreement: {}",
-                    savedDocument.getId(), accordConcession.getNumeroAccord());
+            log.info("Created document with ID: {} and version: {} for concession agreement: {}",
+                    savedDocument.getId(), savedDocument.getVersion(), accordConcession.getNumeroAccord());
 
             // Link the saved document to the accord concession
             accordConcession.setDocument(savedDocument);

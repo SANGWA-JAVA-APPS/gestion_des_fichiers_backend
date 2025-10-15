@@ -2,9 +2,14 @@ package com.bar.gestiondesfichier.document.controller;
 
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.model.NormeLoi;
 import com.bar.gestiondesfichier.document.projection.NormeLoiProjection;
+import com.bar.gestiondesfichier.document.repository.DocumentRepository;
 import com.bar.gestiondesfichier.document.repository.NormeLoiRepository;
+import com.bar.gestiondesfichier.document.service.DocumentUploadService;
+import com.bar.gestiondesfichier.entity.Account;
+import com.bar.gestiondesfichier.repository.AccountRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,8 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,9 +39,18 @@ import java.util.Optional;
 public class NormeLoiController {
 
     private final NormeLoiRepository normeLoiRepository;
+    private final DocumentUploadService documentUploadService;
+    private final DocumentRepository documentRepository;
+    private final AccountRepository accountRepository;
 
-    public NormeLoiController(NormeLoiRepository normeLoiRepository) {
+    public NormeLoiController(NormeLoiRepository normeLoiRepository,
+                              DocumentUploadService documentUploadService,
+                              DocumentRepository documentRepository,
+                              AccountRepository accountRepository) {
         this.normeLoiRepository = normeLoiRepository;
+        this.documentUploadService = documentUploadService;
+        this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
     }
 
     @GetMapping
@@ -109,13 +127,16 @@ public class NormeLoiController {
         }
     }
 
-    @PostMapping
-    @Operation(summary = "Create norme loi", description = "Create a new norme loi record")
+    @PostMapping(consumes = {"multipart/form-data"})
+    @Transactional
+    @Operation(summary = "Create norme loi", description = "Create a new norme loi record with file upload")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Norme loi created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        @ApiResponse(responseCode = "400", description = "Invalid request data or missing file")
     })
-    public ResponseEntity<Map<String, Object>> createNormeLoi(@RequestBody NormeLoi normeLoi) {
+    public ResponseEntity<Map<String, Object>> createNormeLoi(
+            @RequestPart("normeLoi") NormeLoi normeLoi,
+            @RequestPart("file") MultipartFile file) {
         try {
             log.info("Creating new norme loi: {}", normeLoi.getReference());
             
@@ -128,10 +149,6 @@ public class NormeLoiController {
                 return ResponseUtil.badRequest("DoneBy (Account) is required");
             }
             
-            if (normeLoi.getDocument() == null) {
-                return ResponseUtil.badRequest("Document is required");
-            }
-            
             if (normeLoi.getStatus() == null) {
                 return ResponseUtil.badRequest("Status is required");
             }
@@ -140,8 +157,74 @@ public class NormeLoiController {
             if (normeLoiRepository.existsByReferenceAndActiveTrue(normeLoi.getReference())) {
                 return ResponseUtil.badRequest("Norme loi with this reference already exists");
             }
+
+            // Get the current user (owner) for the document
+            Account owner = normeLoi.getDoneBy();
+
+            // Verify the account exists
+            Optional<Account> accountOpt = accountRepository.findById(owner.getId());
+            if (accountOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Account not found with ID: " + owner.getId());
+            }
+            Account actualOwner = accountOpt.get();
+
+            // Prepare variables for document metadata
+            String contentType;
+            String fileExtension;
+            String uniqueFileName;
+            String originalFileName;
+            String filePath;
+            long fileSize;
+
+            // Validate that file is provided (mandatory)
+            if (file == null || file.isEmpty()) {
+                log.warn("File upload is required but not provided for norme loi: {}",
+                        normeLoi.getReference());
+                return ResponseUtil.badRequest("Document file is required. Please upload a file to create the norme loi.");
+            }
+
+            // Handle file upload
+            log.info("File upload detected: {}", file.getOriginalFilename());
             
+            // Upload file and get file path
+            try {
+                filePath = documentUploadService.uploadFile(file, "norme_loi");
+
+                // Extract information from uploaded file
+                contentType = file.getContentType();
+                fileSize = file.getSize();
+                fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
+
+                // Extract unique filename from path
+                uniqueFileName = Paths.get(filePath).getFileName().toString();
+
+                // Generate original filename
+                originalFileName = documentUploadService.generateOriginalFileName(
+                        "Norme_Loi",
+                        normeLoi.getReference(),
+                        fileExtension
+                );
+
+                log.info("File uploaded successfully: {}", filePath);
+            } catch (IOException e) {
+                log.error("Failed to upload file", e);
+                return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
+            }
+
+            // Initialize the document using DocumentUploadService
+            Document document = documentUploadService.initializeDocument(
+                    uniqueFileName, originalFileName, contentType, fileSize, filePath, actualOwner);
+
+            // Save the document first
+            Document savedDocument = documentRepository.save(document);
+            log.info("Created document with ID: {} and version: {} for norme loi: {}",
+                    savedDocument.getId(), savedDocument.getVersion(), normeLoi.getReference());
+
+            // Link the saved document to the norme loi
+            normeLoi.setDocument(savedDocument);
             normeLoi.setActive(true);
+
+            // Save the norme loi
             NormeLoi savedNormeLoi = normeLoiRepository.save(normeLoi);
             
             return ResponseUtil.success(savedNormeLoi, "Norme loi created successfully");

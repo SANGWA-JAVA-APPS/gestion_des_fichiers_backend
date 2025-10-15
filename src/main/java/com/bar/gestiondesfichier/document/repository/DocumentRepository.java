@@ -58,6 +58,9 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     
     boolean existsByFileNameAndActiveTrue(String fileName);
     
+    // Find latest document by original file name (for version checking)
+    Optional<Document> findTopByOriginalFileNameOrderByIdDesc(String originalFileName);
+    
     @Query("SELECT SUM(d.fileSize) FROM Document d WHERE d.active = true")
     Long getTotalFileSize();
     
