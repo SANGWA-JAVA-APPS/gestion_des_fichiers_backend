@@ -592,6 +592,8 @@ by using mcp, analyse the database where we want to track doc.
 
 - in the backend make a @scheduled cron that runs every 30 minutes to check expirent document from the docstatus table and just use 
 	System.out.println to print the total number if documents.
+- in the backend, there is a @Scheduled cron job that runs every 30 minutes to check expirent document from the docstatus table, is there a way that i can send
+	the notification to this email: m.fall@aglgroup.com
 - you have changed he dashboard, it is good looking, but i want you to remind that under the location there were:
 	country, entity, module and section, so please use mcp and verify the entitties structure and add the corresponding
 	reqursts in the frontend, check if the components/forms dont exist already and prepare/create them.
@@ -632,54 +634,19 @@ by using mcp, analyse the database where we want to track doc.
 	retaining the userid of the logged in user.
 	2. if yes then use that id to retrieve the users information. in the backend use the AccountRepository.java and check if the query
 	does not already exist if not create it and use it on the backend (my profile).
-	
 
-
-
-
-
-
-
-
-
-
-
-
-
--
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-applicable, suspended, remplaced, annulé, en_cours, acquis, vendu, transféré, litigieux, validé
-- active
-- archive
-- expired
-
-
-
+- In the backend add the version in the Document.java as string
+- in the controller of AccordConcessionController.java while creating a new document, 
+	- the system has to create the a new record from "files" table and link the "files" id to the "accord_concession" as the accord_concession is related to files
+	  through doc_id. put some random data into "files".
+- now in the 
+	- the system has to check if the "fileName" from "files" table exists, and
+	if it exists, it still uploads but the servsion increases by 1.
+- in this location com.bar.gestiondesfichier.service from backend i would like to create a form upload  service class that can be used by any other class.
+	- the upload service should allow these types of documents: PDF, Word, Excel, CVS, PPT, EML, VSD, VSDX, the values can be set in application.properties.
+	- the file should be saved on the root of the application in a  folder called "/files", if the folder is not there it has to be created.
+	- the service should expect the documentType and there should be another folder created inside /files created(if not exits) with that name by in small letters
+	- the details of the file should be saved in the "files" table 
 
 
 
