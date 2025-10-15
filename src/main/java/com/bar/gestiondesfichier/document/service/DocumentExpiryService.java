@@ -3,6 +3,7 @@ package com.bar.gestiondesfichier.document.service;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.model.DocumentStatus;
 import com.bar.gestiondesfichier.document.repository.DocumentRepository;
+import com.bar.gestiondesfichier.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,8 +24,7 @@ import java.util.List;
 public class DocumentExpiryService {
 
     private final DocumentRepository documentRepository;
-    // TODO: Inject EmailService when available
-    // private final EmailService emailService;
+    private final EmailService emailService;
 
     /**
      * Check for documents expiring within 2 weeks and send alerts to admin Runs
@@ -75,8 +75,9 @@ public class DocumentExpiryService {
     }
 
     /**
-     * Check expiring documents and print count every 30 minutes Runs every 30
-     * minutes Cron expression: 30 (at minute 0 and 30 of every hour)
+     * Check expiring documents and send notification every 30 minutes 
+     * Runs every 30 minutes 
+     * Cron expression: 0 */30 * * * * (at minute 0 and 30 of every hour)
      */
     @Scheduled(cron = "0 */30 * * * *")
     @Transactional(readOnly = true)
@@ -100,6 +101,40 @@ public class DocumentExpiryService {
             System.out.println("===========================================");
 
             log.info("Scheduled check: {} documents expiring within 30 days", expiringDocuments.size());
+
+            // Send email notification if there are expiring documents
+            if (!expiringDocuments.isEmpty()) {
+                StringBuilder emailBody = new StringBuilder();
+                emailBody.append("EXPIRING DOCUMENTS REPORT\n\n");
+                emailBody.append(String.format("Total documents expiring within 30 days: %d\n\n", expiringDocuments.size()));
+                emailBody.append("Details:\n");
+                emailBody.append("========================================\n\n");
+
+                for (Document doc : expiringDocuments) {
+                    long daysUntilExpiry = ChronoUnit.DAYS.between(LocalDate.now(), doc.getExpiryDate());
+                    emailBody.append(String.format(
+                        "- Document: %s\n" +
+                        "  ID: %d\n" +
+                        "  Owner: %s\n" +
+                        "  Days until expiry: %d\n" +
+                        "  Expiry date: %s\n\n",
+                        doc.getOriginalFileName() != null ? doc.getOriginalFileName() : doc.getFileName(),
+                        doc.getId(),
+                        doc.getOwner() != null ? doc.getOwner().getFullName() : "Unknown",
+                        daysUntilExpiry,
+                        doc.getExpiryDate()
+                    ));
+                }
+
+                emailBody.append("\nPlease review these documents and take necessary action.\n");
+                
+                emailService.sendAdminAlert(
+                    String.format("⚠️ %d Document(s) Expiring Soon", expiringDocuments.size()),
+                    emailBody.toString()
+                );
+                
+                log.info("Expiring documents notification sent to admin");
+            }
         } catch (Exception e) {
             log.error("Error during scheduled expiring documents count check", e);
             System.err.println("Error checking expiring documents: " + e.getMessage());
@@ -169,8 +204,7 @@ public class DocumentExpiryService {
     }
 
     /**
-     * Send expiry alert notification Currently logs the alert. Will send email
-     * when EmailService is implemented
+     * Send expiry alert notification via email
      *
      * @param document the document that is expiring
      */
@@ -196,12 +230,19 @@ public class DocumentExpiryService {
                 document.getExpiryDate()
         );
 
-        // Log the alert (replace with email service when available)
+        // Log the alert
         log.warn("EXPIRY ALERT: {}", subject);
         log.warn("Alert Details:\n{}", message);
 
-        // TODO: Uncomment when EmailService is implemented
-        // emailService.sendAdminAlert(subject, message);
+        // Send email notification to admin
+        emailService.sendDocumentExpiryAlert(
+                document.getFileName(),
+                document.getId(),
+                document.getOriginalFileName(),
+                document.getOwner() != null ? document.getOwner().getFullName() : "Unknown",
+                daysUntilExpiry,
+                document.getExpiryDate().toString()
+        );
     }
 
     /**
