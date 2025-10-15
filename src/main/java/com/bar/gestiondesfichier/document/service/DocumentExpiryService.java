@@ -75,9 +75,9 @@ public class DocumentExpiryService {
     }
 
     /**
-     * Check expiring documents and send notification every 30 minutes 
-     * Runs every 30 minutes 
-     * Cron expression: 0 */30 * * * * (at minute 0 and 30 of every hour)
+     * Check expiring documents and send notification every 30 minutes Runs
+     * every 30 minutes Cron expression: 0 /30 * * * * (at minute 0 and 30 of
+     * every hour)
      */
     @Scheduled(cron = "0 */30 * * * *")
     @Transactional(readOnly = true)
@@ -113,26 +113,26 @@ public class DocumentExpiryService {
                 for (Document doc : expiringDocuments) {
                     long daysUntilExpiry = ChronoUnit.DAYS.between(LocalDate.now(), doc.getExpiryDate());
                     emailBody.append(String.format(
-                        "- Document: %s\n" +
-                        "  ID: %d\n" +
-                        "  Owner: %s\n" +
-                        "  Days until expiry: %d\n" +
-                        "  Expiry date: %s\n\n",
-                        doc.getOriginalFileName() != null ? doc.getOriginalFileName() : doc.getFileName(),
-                        doc.getId(),
-                        doc.getOwner() != null ? doc.getOwner().getFullName() : "Unknown",
-                        daysUntilExpiry,
-                        doc.getExpiryDate()
+                            "- Document: %s\n"
+                            + "  ID: %d\n"
+                            + "  Owner: %s\n"
+                            + "  Days until expiry: %d\n"
+                            + "  Expiry date: %s\n\n",
+                            doc.getOriginalFileName() != null ? doc.getOriginalFileName() : doc.getFileName(),
+                            doc.getId(),
+                            doc.getOwner() != null ? doc.getOwner().getFullName() : "Unknown",
+                            daysUntilExpiry,
+                            doc.getExpiryDate()
                     ));
                 }
 
                 emailBody.append("\nPlease review these documents and take necessary action.\n");
-                
+
                 emailService.sendAdminAlert(
-                    String.format("⚠️ %d Document(s) Expiring Soon", expiringDocuments.size()),
-                    emailBody.toString()
+                        String.format("⚠️ %d Document(s) Expiring Soon", expiringDocuments.size()),
+                        emailBody.toString()
                 );
-                
+
                 log.info("Expiring documents notification sent to admin");
             }
         } catch (Exception e) {
