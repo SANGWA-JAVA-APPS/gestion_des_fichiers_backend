@@ -2,7 +2,7 @@ INSERT INTO docstatus (name, description, active, created_at, updated_at) VALUES
 ('Applicable', 'Document is applicable and can be used', 1, NOW(), NOW()),
 ('Suspended', 'Document is temporarily suspended', 1, NOW(), NOW()),
 ('Replaced', 'Document has been replaced by a newer version', 1, NOW(), NOW()),
-('Canceled', 'Document has been canceled', 1, NOW(), NOW()),
+('Cancelled', 'Document has been canceled', 1, NOW(), NOW()),
 ('In Progress', 'Document is currently in progress', 1, NOW(), NOW()),
 ('Valid', 'Document is valid and active', 1, NOW(), NOW()),
 ('Rejected', 'Document has been rejected', 1, NOW(), NOW()),
