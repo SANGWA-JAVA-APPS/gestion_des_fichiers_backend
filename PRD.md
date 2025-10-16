@@ -639,18 +639,52 @@ by using mcp, analyse the database where we want to track doc.
 - in the controller of AccordConcessionController.java while creating a new document, 
 	- the system has to create the a new record from "files" table and link the "files" id to the "accord_concession" as the accord_concession is related to files
 	  through doc_id. put some random data into "files".
-- now in the 
-	- the system has to check if the "fileName" from "files" table exists, and
-	if it exists, it still uploads but the servsion increases by 1.
+- In the AccordConcessionController.java from line 159, the app initializes the Document object like this:  Document document = new Document(); and now it needs,
+	to check by FileName if the document exists before saving on line 173:  Document savedDocument, it checks the current version of the document by filename
+	 and increases that version by one by 1.
+- now  i want that functionality of check the version and by name to be in a service that you created in document.service called "DocumentUploadService.java",
+	and that functinality can be one or more functions with parameters, so dont change the functionality bu refactor for reusability.
+- on line 167 and 168 the extensions should be extracted fromt he file, not statically .pdf, so do it but that also should be done in the DocumentUploadService.java
+	service
+- i want to make the file upload functionality in "DocumentUploadService.java", as a method that accepts file (multipart) and folderName as parameters and uploads
+	 it on a application context root location and it has to check if the folderName exist, if not it creates it.
+- call that functionality in the "createAccordConcession" method and prepare the "createAccordConcession" post as a file upload method, add multipart @RequestParam
+- now i want the functionality of initializing the Document object to be part of "DocumentUploadService.java" so take the functionalty from line 218 and 236 to be in
+	"DocumentUploadService.java"
+- on line 174: if (file != null && !file.isEmpty()) { remove the else beause the user has to provide the document and return a meaningful message to frontend
+
+- By doing one controller at a time, now inside com.bar.gestiondesfichier.document.controller controllers, add the functionality on each post request of file upload as it is in the 
+	AccordConcessionController.java on createAccordConcession post method
+	as the following:
+	- // Prepare variables for document metadata
+            String contentType;
+            String fileExtension;
+            String uniqueFileName;
+            String originalFileName;
+            String filePath;
+
+	 if (file == null || file.isEmpty()) {
+	documentUploadService.uploadFile
+	fileExtension = documentUploadService.extractFileExtension
+	originalFileName = documentUploadService.generateOriginalFileName
+	documentUploadService.initializeDocument
+	documentRepository.save
+	accordConcessionRepository.save
+follow the structure of createAccordConcession post inside "DocumentUploadService.java"
 - in this location com.bar.gestiondesfichier.service from backend i would like to create a form upload  service class that can be used by any other class.
 	- the upload service should allow these types of documents: PDF, Word, Excel, CVS, PPT, EML, VSD, VSDX, the values can be set in application.properties.
 	- the file should be saved on the root of the application in a  folder called "/files", if the folder is not there it has to be created.
 	- the service should expect the documentType and there should be another folder created inside /files created(if not exits) with that name by in small letters
-	- the details of the file should be saved in the "files" table 
+	- the details of the file should be saved in the "files" table.
 
-
-
-
-
-
-
+- now find the src/components/document forms and locate the 
+- now the show me the modal ui from line 65 const handleShowModal = (item = null) => {, in NormeLoiComponent.jsx.
+- The NormeLoiComponent.jsx has issue while saving the form it is giving 500, which when you look at the backend it shows 
+	this: org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' is not supported, please verify the url matching between frontend
+	and backend.
+- the CommAssetLandComponent.jsx submission is giving 500 error, the backend is giving: org.springframework.web.multipart.support.MissingServletRequestPartException:
+	 Required part 'commAssetLand' is not present.
+- i am gettign this: Validation failed: Status is required on POST /api/document/cargo-damage
+- the api/document/permi-construction is giving the 400 error: Numero permis is required
+- the api/document/accord-concession is giving the 400 Numero accord is required
+- By using mcp, insert into the table called "countries" the names of the all countries in the world.

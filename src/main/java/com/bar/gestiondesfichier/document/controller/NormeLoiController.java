@@ -44,9 +44,9 @@ public class NormeLoiController {
     private final AccountRepository accountRepository;
 
     public NormeLoiController(NormeLoiRepository normeLoiRepository,
-                              DocumentUploadService documentUploadService,
-                              DocumentRepository documentRepository,
-                              AccountRepository accountRepository) {
+            DocumentUploadService documentUploadService,
+            DocumentRepository documentRepository,
+            AccountRepository accountRepository) {
         this.normeLoiRepository = normeLoiRepository;
         this.documentUploadService = documentUploadService;
         this.documentRepository = documentRepository;
@@ -69,12 +69,12 @@ public class NormeLoiController {
             @Parameter(description = "Filter by document ID") @RequestParam(required = false) Long documentId,
             @Parameter(description = "Search term") @RequestParam(required = false) String search) {
         try {
-            log.info("Retrieving norme loi records - page: {}, size: {}, sort: {} {}, statusId: {}, documentId: {}, search: '{}'", 
+            log.info("Retrieving norme loi records - page: {}, size: {}, sort: {} {}, statusId: {}, documentId: {}, search: '{}'",
                     page, size, sort, direction, statusId, documentId, search);
-            
+
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<NormeLoiProjection> normeLois;
-            
+
             // Priority: search > statusId > documentId > all
             if (search != null && !search.trim().isEmpty()) {
                 log.debug("Filtering norme loi by search term: '{}'", search);
@@ -89,7 +89,7 @@ public class NormeLoiController {
                 log.debug("Retrieving all active norme loi records");
                 normeLois = normeLoiRepository.findAllActiveProjections(pageable);
             }
-            
+
             log.info("Successfully retrieved {} norme loi records", normeLois.getTotalElements());
             return ResponseEntity.ok(normeLois);
         } catch (IllegalArgumentException e) {
@@ -112,10 +112,10 @@ public class NormeLoiController {
             if (id == null || id <= 0) {
                 return ResponseUtil.badRequest("Invalid norme loi ID");
             }
-            
+
             log.info("Retrieving norme loi by ID: {}", id);
             Optional<NormeLoi> normeLoi = normeLoiRepository.findByIdAndActiveTrue(id);
-            
+
             if (normeLoi.isPresent()) {
                 return ResponseUtil.success(normeLoi.get(), "Norme loi retrieved successfully");
             } else {
@@ -132,27 +132,26 @@ public class NormeLoiController {
     @Operation(summary = "Create norme loi", description = "Create a new norme loi record with file upload")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Norme loi created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data or missing file")
-    })
+        @ApiResponse(responseCode = "400", description = "Invalid request data or missing file")})
     public ResponseEntity<Map<String, Object>> createNormeLoi(
             @RequestPart("normeLoi") NormeLoi normeLoi,
             @RequestPart("file") MultipartFile file) {
         try {
             log.info("Creating new norme loi: {}", normeLoi.getReference());
-            
+
             // Validate required fields
             if (normeLoi.getReference() == null || normeLoi.getReference().trim().isEmpty()) {
                 return ResponseUtil.badRequest("Reference is required");
             }
-            
+
             if (normeLoi.getDoneBy() == null) {
                 return ResponseUtil.badRequest("DoneBy (Account) is required");
             }
-            
+
             if (normeLoi.getStatus() == null) {
                 return ResponseUtil.badRequest("Status is required");
             }
-            
+
             // Check if reference already exists
             if (normeLoiRepository.existsByReferenceAndActiveTrue(normeLoi.getReference())) {
                 return ResponseUtil.badRequest("Norme loi with this reference already exists");
@@ -185,7 +184,7 @@ public class NormeLoiController {
 
             // Handle file upload
             log.info("File upload detected: {}", file.getOriginalFilename());
-            
+
             // Upload file and get file path
             try {
                 filePath = documentUploadService.uploadFile(file, "norme_loi");
@@ -226,7 +225,7 @@ public class NormeLoiController {
 
             // Save the norme loi
             NormeLoi savedNormeLoi = normeLoiRepository.save(normeLoi);
-            
+
             return ResponseUtil.success(savedNormeLoi, "Norme loi created successfully");
         } catch (Exception e) {
             log.error("Error creating norme loi", e);
@@ -243,14 +242,14 @@ public class NormeLoiController {
     public ResponseEntity<Map<String, Object>> updateNormeLoi(@PathVariable Long id, @RequestBody NormeLoi normeLoi) {
         try {
             log.info("Updating norme loi with ID: {}", id);
-            
+
             Optional<NormeLoi> existingNormeLoiOpt = normeLoiRepository.findByIdAndActiveTrue(id);
             if (existingNormeLoiOpt.isEmpty()) {
                 return ResponseUtil.badRequest("Norme loi not found with ID: " + id);
             }
-            
+
             NormeLoi existingNormeLoi = existingNormeLoiOpt.get();
-            
+
             // Update fields
             if (normeLoi.getReference() != null) {
                 existingNormeLoi.setReference(normeLoi.getReference());
@@ -267,7 +266,7 @@ public class NormeLoiController {
             if (normeLoi.getStatus() != null) {
                 existingNormeLoi.setStatus(normeLoi.getStatus());
             }
-            
+
             NormeLoi savedNormeLoi = normeLoiRepository.save(existingNormeLoi);
             return ResponseUtil.success(savedNormeLoi, "Norme loi updated successfully");
         } catch (Exception e) {
@@ -285,16 +284,16 @@ public class NormeLoiController {
     public ResponseEntity<Map<String, Object>> deleteNormeLoi(@PathVariable Long id) {
         try {
             log.info("Deleting norme loi with ID: {}", id);
-            
+
             Optional<NormeLoi> normeLoiOpt = normeLoiRepository.findByIdAndActiveTrue(id);
             if (normeLoiOpt.isEmpty()) {
                 return ResponseUtil.badRequest("Norme loi not found with ID: " + id);
             }
-            
+
             NormeLoi normeLoi = normeLoiOpt.get();
             normeLoi.setActive(false);
             normeLoiRepository.save(normeLoi);
-            
+
             return ResponseUtil.success(null, "Norme loi deleted successfully");
         } catch (Exception e) {
             log.error("Error deleting norme loi with ID: {}", id, e);
