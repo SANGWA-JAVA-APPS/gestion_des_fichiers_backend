@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public abstract class NamedEntity extends BaseEntity {
 
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "name", unique = true, nullable = false, length = 255)
     private String name;
 
     @Column(name = "description", length = 500)
