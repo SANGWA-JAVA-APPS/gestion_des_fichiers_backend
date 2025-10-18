@@ -688,3 +688,101 @@ follow the structure of createAccordConcession post inside "DocumentUploadServic
 - the api/document/permi-construction is giving the 400 error: Numero permis is required
 - the api/document/accord-concession is giving the 400 Numero accord is required
 - By using mcp, insert into the table called "countries" the names of the all countries in the world.
+- in the dashboard.jsx, i want you to use put on it background image which is located in /asset called "DashbaordBg.png", only on dashboard.jsx body, make it full
+	and static
+- inside DocumentComponent.jsx on line 53, the result is showing the text document.title instead of a chosed document title, please fix it.
+- in the same file what is the use of renderActiveComponent() on line 153?
+- in the side navigation in the same file <Card.Body className="p-0"> on line 64, i want to highlight the one that is chosen/clicked and unhighlight others
+- in the each of the forms under document there is a card that displays the document title based in the clicked document,
+	here is an example from "DocStatusComponent.jsx" on line 137 that displays the "document.docStatus" in <h4> tag, i want to you to split  the whole header
+	into 4 columns so that the title remains but next on the right yo put a column that has a reusable search component and that component has these:
+	- a dropdown that can be initialized items dynamically
+	- three textboxes one which with an event that can dnamically be managed(as a prop) while we call the component
+	- two dates textboxes that have onCahnge events that can can dnamically be managed(as a prop) while we call the component, so both will be for dates
+	date start and date end.
+	- a search button that can have access to all the items in the search component.
+	Do one file under src/components/document at a time
+- by taking an eample from "DocStatusComponent.jsx", on the header:
+	<Card.Header>
+              <Row className="align-items-center">
+                <Col xs={12} md={6} lg={3}>
+                  <h4 className="mb-0">
+                    {getText("document.docStatus", language)}
+                  </h4>
+                </Col>
+	is there a way you can try to put the search component  horizontally place in the header where the title and compenent and the buttons:
+	<Button  
+                    variant="primary"    
+                    size="sm"  
+                    className="me-2"                  
+                    onClick={() => handleShowModal()}>
+                    <i className="bi bi-plus-circle me-1"></i>
+                    {getText("common.add", language)}
+                  </Button>
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={loadData}>
+                    <i className="bi bi-arrow-clockwise me-1"></i>
+                    {getText("document.actions.refresh", language)}
+                  </Button> 
+	are a in the same row and each of the is in the Col? But also make sure the title and the search component have enough space
+- in DocumentStatus, on line 87, there is a navigation, i want to change the font size to a bit smaller, and put that into globa.scss
+- In DocumentComponent.jsx online 69 i have a div with a classdocument-management, i want you to check all over where it is defined including global.scss
+	and let me know.
+- In DocumentComponent.jsx online 178 on <SearchComponent,  iwant to console.log all values entered in the component when i click on 
+	onSearch={handleSearch} searchButtonText="Search"
+- i want to reuse the searchcomponent as it is used in <SearchComponent on line 187, the default items in the dropdown should empty for now. the rest
+	items can be as the way they are in DocumentComponent.jsx in all documents under src/compoenents/document.
+- reuse the searchcomponent in document one by one
+
+
+- in DocStatusComponent.jsx, on line 178, there is: <SearchComponent and iwant the 
+1. visualize documents & edit documents
+2. Test and see the paginate 50 rec, 20 rec is working
+3. search date(s,e) (filtering by options).
+
+with this exmple:
+ <Card.Header>
+              <Row className="align-items-center">
+                <Col xs={12} md={6} lg={3}>
+                  <h4 className="mb-0">
+                    {getText("document.docStatus", language)}
+                  </h4>
+                </Col>
+- find all h4 tag i under header in src/components/document and restructure the only <h4> for reusability start by the 
+	DocStatusComponent.jsx and work on other files one by one	
+- in AdminDashboard.jsx, show me how i can make 
+<Container 
+      fluid  fro line 231 responsive so that the left navigation can become humburger menu and the content part can be still
+	responsive on small devices
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

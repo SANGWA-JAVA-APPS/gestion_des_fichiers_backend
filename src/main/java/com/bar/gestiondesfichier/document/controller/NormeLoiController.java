@@ -15,7 +15,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -35,8 +36,9 @@ import java.util.Optional;
 @RequestMapping("/api/document/norme-loi")
 @DocumentControllerCors
 @Tag(name = "Norme Loi Management", description = "Legal Norms and Laws CRUD operations with pagination")
-@Slf4j
 public class NormeLoiController {
+
+    private static final Logger log = LoggerFactory.getLogger(NormeLoiController.class);
 
     private final NormeLoiRepository normeLoiRepository;
     private final DocumentUploadService documentUploadService;
