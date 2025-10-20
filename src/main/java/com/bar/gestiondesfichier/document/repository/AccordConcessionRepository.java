@@ -28,15 +28,27 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "LOWER(a.objetConcession) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<AccordConcession> findByActiveTrueAndNumeroAccordOrObjetConcessionContaining(@Param("search") String search, Pageable pageable);
 
-    @Query("   SELECT  a.id as id, a.dateTime as dateTime, a.contratConcession as contratConcession, "
-            + "    a.numeroAccord as numeroAccord, a.objetConcession as objetConcession, a.concessionnaire as concessionnaire, "
-            + "    a.dureeAnnees as dureeAnnees, a.conditionsFinancieres as conditionsFinancieres, "
-            + "    a.emplacement as emplacement, a.coordonneesGps as coordonneesGps, "
-            + "    a.rapportTransfertGestion as rapportTransfertGestion, a.dateDebutConcession as dateDebutConcession, "
-            + "    a.dateFinConcession as dateFinConcession, "
-            + "    a.document as document, a.status as status, a.doneBy as doneBy, a.sectionCategory as sectionCategory "
-            + "FROM AccordConcession a WHERE a.active = true AND "
-            + "(LOWER(a.numeroAccord) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+    @Query("SELECT a.id as id, a.dateTime as dateTime, a.contratConcession as contratConcession, "
+            + "a.numeroAccord as numeroAccord, a.objetConcession as objetConcession, a.concessionnaire as concessionnaire, "
+            + "a.dureeAnnees as dureeAnnees, a.conditionsFinancieres as conditionsFinancieres, "
+            + "a.emplacement as emplacement, a.coordonneesGps as coordonneesGps, "
+            + "a.rapportTransfertGestion as rapportTransfertGestion, a.dateDebutConcession as dateDebutConcession, "
+            + "a.dateFinConcession as dateFinConcession, "
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "a.status.id as status_id, a.status.name as status_name, "
+            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
+            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "FROM AccordConcession a "
+            + "JOIN a.document d "
+            + "JOIN d.owner "
+            + "WHERE a.active = true AND "
+            + "(LOWER(a.numeroAccord) LIKE LOWER(CONCAT('%', :search, '%')) OR  "
             + "LOWER(a.objetConcession) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<AccordConcessionProjection> findByActiveTrueAndNumeroAccordOrObjetConcessionContainingProjections(@Param("search") String search, Pageable pageable);
 
@@ -46,8 +58,20 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "a.emplacement as emplacement, a.coordonneesGps as coordonneesGps, "
             + "a.rapportTransfertGestion as rapportTransfertGestion, a.dateDebutConcession as dateDebutConcession, "
             + "a.dateFinConcession as dateFinConcession, "
-            + "a.document as document, a.status as status, a.doneBy as doneBy, a.sectionCategory as sectionCategory "
-            + "FROM AccordConcession a WHERE a.active = true AND a.status.id = :statusId")
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "a.status.id as status_id, a.status.name as status_name, "
+            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
+            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "FROM AccordConcession a "
+            + "JOIN a.document d "
+            + "JOIN d.owner "
+            + "WHERE a.active = true AND a.status.id = :statusId")
     Page<AccordConcessionProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
 
     @Query("SELECT a.id as id, a.dateTime as dateTime, a.contratConcession as contratConcession, "
@@ -56,8 +80,20 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "a.emplacement as emplacement, a.coordonneesGps as coordonneesGps, "
             + "a.rapportTransfertGestion as rapportTransfertGestion, a.dateDebutConcession as dateDebutConcession, "
             + "a.dateFinConcession as dateFinConcession, "
-            + "a.document as document, a.status as status, a.doneBy as doneBy, a.sectionCategory as sectionCategory "
-            + "FROM AccordConcession a WHERE a.active = true AND a.sectionCategory.id = :sectionCategoryId")
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "a.status.id as status_id, a.status.name as status_name, "
+            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
+            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "FROM AccordConcession a "
+            + "JOIN a.document d "
+            + "JOIN d.owner "
+            + "WHERE a.active = true AND a.sectionCategory.id = :sectionCategoryId")
     Page<AccordConcessionProjection> findByActiveTrueAndSectionCategoryIdProjections(@Param("sectionCategoryId") Long sectionCategoryId, Pageable pageable);
 
     @Query("SELECT a.id as id, a.dateTime as dateTime, a.contratConcession as contratConcession, "
@@ -66,8 +102,20 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "a.emplacement as emplacement, a.coordonneesGps as coordonneesGps, "
             + "a.rapportTransfertGestion as rapportTransfertGestion, a.dateDebutConcession as dateDebutConcession, "
             + "a.dateFinConcession as dateFinConcession, "
-            + "a.document as document, a.status as status, a.doneBy as doneBy, a.sectionCategory as sectionCategory "
-            + "FROM AccordConcession a WHERE a.active = true AND a.document.id = :documentId")
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "a.status.id as status_id, a.status.name as status_name, "
+            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
+            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "FROM AccordConcession a "
+            + "JOIN a.document d "
+            + "JOIN d.owner "
+            + "WHERE a.active = true AND a.document.id = :documentId")
     Page<AccordConcessionProjection> findByActiveTrueAndDocumentIdProjections(@Param("documentId") Long documentId, Pageable pageable);
 
     Page<AccordConcession> findByActiveTrueAndSectionCategory_Id(Long sectionCategoryId, Pageable pageable);
@@ -83,8 +131,20 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "a.emplacement as emplacement, a.coordonneesGps as coordonneesGps, "
             + "a.rapportTransfertGestion as rapportTransfertGestion, a.dateDebutConcession as dateDebutConcession, "
             + "a.dateFinConcession as dateFinConcession, "
-            + "a.document as document, a.status as status, a.doneBy as doneBy, a.sectionCategory as sectionCategory "
-            + "FROM AccordConcession a WHERE a.active = true")
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "a.status.id as status_id, a.status.name as status_name, "
+            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
+            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "FROM AccordConcession a "
+            + "JOIN a.document d "
+            + "JOIN d.owner "
+            + "WHERE a.active = true")
     Page<AccordConcessionProjection> findAllActiveProjections(Pageable pageable);
 
     Optional<AccordConcession> findByIdAndActiveTrue(Long id);

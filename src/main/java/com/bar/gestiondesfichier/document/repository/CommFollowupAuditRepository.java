@@ -33,32 +33,80 @@ public interface CommFollowupAuditRepository extends JpaRepository<CommFollowupA
            "a.description as description, a.dateAudit as dateAudit, a.auditor as auditor, " +
            "a.numNonConform as numNonConform, a.typeConform as typeConform, " +
            "a.percentComplete as percentComplete, a.docAttach as docAttach, " +
-           "a.document as document, a.status as status, a.doneBy as doneBy, a.section as section " +
-           "FROM CommFollowupAudit a WHERE a.active = true")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "a.status.id as status_id, a.status.name as status_name, " +
+           "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, " +
+           "a.section.id as section_id, a.section.name as section_name " +
+           "FROM CommFollowupAudit a " +
+           "JOIN a.document d " +
+           "JOIN d.owner " +
+           "WHERE a.active = true")
     Page<CommFollowupAuditProjection> findAllActiveProjections(Pageable pageable);
     
     @Query("SELECT a.id as id, a.dateTime as dateTime, a.reference as reference, " +
            "a.description as description, a.dateAudit as dateAudit, a.auditor as auditor, " +
            "a.numNonConform as numNonConform, a.typeConform as typeConform, " +
            "a.percentComplete as percentComplete, a.docAttach as docAttach, " +
-           "a.document as document, a.status as status, a.doneBy as doneBy, a.section as section " +
-           "FROM CommFollowupAudit a WHERE a.active = true AND a.status.id = :statusId")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "a.status.id as status_id, a.status.name as status_name, " +
+           "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, " +
+           "a.section.id as section_id, a.section.name as section_name " +
+           "FROM CommFollowupAudit a " +
+           "JOIN a.document d " +
+           "JOIN d.owner " +
+           "WHERE a.active = true AND a.status.id = :statusId")
     Page<CommFollowupAuditProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
     
     @Query("SELECT a.id as id, a.dateTime as dateTime, a.reference as reference, " +
            "a.description as description, a.dateAudit as dateAudit, a.auditor as auditor, " +
            "a.numNonConform as numNonConform, a.typeConform as typeConform, " +
            "a.percentComplete as percentComplete, a.docAttach as docAttach, " +
-           "a.document as document, a.status as status, a.doneBy as doneBy, a.section as section " +
-           "FROM CommFollowupAudit a WHERE a.active = true AND a.section.id = :sectionId")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "a.status.id as status_id, a.status.name as status_name, " +
+           "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, " +
+           "a.section.id as section_id, a.section.name as section_name " +
+           "FROM CommFollowupAudit a " +
+           "JOIN a.document d " +
+           "JOIN d.owner " +
+           "WHERE a.active = true AND a.section.id = :sectionId")
     Page<CommFollowupAuditProjection> findByActiveTrueAndSectionIdProjections(@Param("sectionId") Long sectionId, Pageable pageable);
     
     @Query("SELECT a.id as id, a.dateTime as dateTime, a.reference as reference, " +
            "a.description as description, a.dateAudit as dateAudit, a.auditor as auditor, " +
            "a.numNonConform as numNonConform, a.typeConform as typeConform, " +
            "a.percentComplete as percentComplete, a.docAttach as docAttach, " +
-           "a.document as document, a.status as status, a.doneBy as doneBy, a.section as section " +
-           "FROM CommFollowupAudit a WHERE a.active = true AND " +
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "a.status.id as status_id, a.status.name as status_name, " +
+           "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, " +
+           "a.section.id as section_id, a.section.name as section_name " +
+           "FROM CommFollowupAudit a " +
+           "JOIN a.document d " +
+           "JOIN d.owner " +
+           "WHERE a.active = true AND " +
            "(LOWER(a.reference) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(a.auditor) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(a.description) LIKE LOWER(CONCAT('%', :search, '%')))")

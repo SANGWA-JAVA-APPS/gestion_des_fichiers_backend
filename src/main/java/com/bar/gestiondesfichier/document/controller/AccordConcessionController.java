@@ -62,8 +62,7 @@ public class AccordConcessionController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Concession agreements retrieved successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
-        @ApiResponse(responseCode = "403", description = "Session expired")
-    })
+        @ApiResponse(responseCode = "403", description = "Session expired")})
     public ResponseEntity<Page<AccordConcessionProjection>> getAllAccordConcession(
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "20") Integer size,

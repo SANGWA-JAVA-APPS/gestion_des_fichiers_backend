@@ -116,7 +116,7 @@ public class NormeLoiController {
             }
 
             log.info("Retrieving norme loi by ID: {}", id);
-            Optional<NormeLoi> normeLoi = normeLoiRepository.findByIdAndActiveTrue(id);
+            Optional<NormeLoiProjection> normeLoi = normeLoiRepository.findByIdAndActiveTrueProjection(id);
 
             if (normeLoi.isPresent()) {
                 return ResponseUtil.success(normeLoi.get(), "Norme loi retrieved successfully");
