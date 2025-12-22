@@ -37,7 +37,6 @@ import java.util.Optional;
 @RequestMapping("/api/document/cargo-damage")
 @DocumentControllerCors
 @Tag(name = "Document", description = "Cargo Damage CRUD operations with pagination")
-@RequiredArgsConstructor
 @Slf4j
 public class CargoDamageController {
 
@@ -45,6 +44,16 @@ public class CargoDamageController {
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
+
+    public CargoDamageController(CargoDamageRepository cargoDamageRepository,
+                                 DocumentUploadService documentUploadService,
+                                 DocumentRepository documentRepository,
+                                 AccountRepository accountRepository) {
+        this.cargoDamageRepository = cargoDamageRepository;
+        this.documentUploadService = documentUploadService;
+        this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
+    }
 
     @GetMapping
     @Operation(summary = "Get all cargo damage records", description = "Retrieve paginated list of cargo damage records with default 20 records per page")
@@ -143,56 +152,52 @@ public class CargoDamageController {
                 return ResponseUtil.badRequest("DoneBy (Account) is required");
             }
 
-            if (cargoDamage.getStatus() == null) {
-                log.warn("Validation failed: Status is required");
-                return ResponseUtil.badRequest("Status is required");
-            }
-
             // Verify account exists
             Account actualOwner = accountRepository.findById(cargoDamage.getDoneBy().getId())
                     .orElseThrow(() -> new RuntimeException("Account not found with ID: " + cargoDamage.getDoneBy().getId()));
 
-            // Validate file is provided (mandatory)
-            if (file == null || file.isEmpty()) {
-                log.warn("Validation failed: Document file is required");
-                return ResponseUtil.badRequest("Document file is required. Please upload a file to create the cargo damage record.");
+            // Document file is optional - can be uploaded later
+            if (file != null && !file.isEmpty()) {
+                // Upload file to cargo_damage folder
+                String filePath;
+                try {
+                    filePath = documentUploadService.uploadFile(file, "cargo_damage");
+                    log.info("File uploaded successfully to: {}", filePath);
+                } catch (IOException e) {
+                    log.error("Failed to upload file", e);
+                    return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
+                }
+
+                // Extract file metadata
+                String contentType = file.getContentType();
+                Long fileSize = file.getSize();
+                String fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
+                String uniqueFileName = Paths.get(filePath).getFileName().toString();
+                String originalFileName = documentUploadService.generateOriginalFileName(
+                        "Cargo_Damage",
+                        cargoDamage.getRefeRequest(),
+                        fileExtension
+                );
+
+                // Initialize and save document
+                Document document = documentUploadService.initializeDocument(
+                        uniqueFileName,
+                        originalFileName,
+                        contentType,
+                        fileSize,
+                        filePath,
+                        actualOwner
+                );
+                Document savedDocument = documentRepository.save(document);
+                log.info("Document saved with ID: {}", savedDocument.getId());
+
+                // Link document to cargo damage
+                cargoDamage.setDocument(savedDocument);
+            } else {
+                log.info("No file provided - creating cargo damage record without document");
+                cargoDamage.setDocument(null);
             }
 
-            // Upload file to cargo_damage folder
-            String filePath;
-            try {
-                filePath = documentUploadService.uploadFile(file, "cargo_damage");
-                log.info("File uploaded successfully to: {}", filePath);
-            } catch (IOException e) {
-                log.error("Failed to upload file", e);
-                return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
-            }
-
-            // Extract file metadata
-            String contentType = file.getContentType();
-            Long fileSize = file.getSize();
-            String fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
-            String uniqueFileName = Paths.get(filePath).getFileName().toString();
-            String originalFileName = documentUploadService.generateOriginalFileName(
-                    "Cargo_Damage",
-                    cargoDamage.getRefeRequest(),
-                    fileExtension
-            );
-
-            // Initialize and save document
-            Document document = documentUploadService.initializeDocument(
-                    uniqueFileName,
-                    originalFileName,
-                    contentType,
-                    fileSize,
-                    filePath,
-                    actualOwner
-            );
-            Document savedDocument = documentRepository.save(document);
-            log.info("Document saved with ID: {}", savedDocument.getId());
-
-            // Link document to cargo damage and save
-            cargoDamage.setDocument(savedDocument);
             cargoDamage.setActive(true);
             CargoDamage saved = cargoDamageRepository.save(cargoDamage);
 

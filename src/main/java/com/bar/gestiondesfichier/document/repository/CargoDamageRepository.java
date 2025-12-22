@@ -28,40 +28,28 @@ public interface CargoDamageRepository extends JpaRepository<CargoDamage, Long> 
            "LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<CargoDamage> findByActiveTrueAndClaimNumberOrDamageDescriptionContaining(@Param("search") String search, Pageable pageable);
     
-    // Direct projection methods for improved performance
-    @Query("SELECT c.id as id, c.dateTime as dateTime, c.refeRequest as refeRequest, " +
-           "c.description as description, c.quotationContractNum as quotationContractNum, " +
-           "c.dateRequest as dateRequest, c.dateContract as dateContract, " +
-           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
-           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
-           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
-           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
-           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
-           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
-           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
-           "c.status.id as status_id, c.status.name as status_name, " +
-           "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username " +
-           "FROM CargoDamage c " +
-           "JOIN c.document d " +
-           "JOIN d.owner " +
+    // Direct projection methods for improved performance using JOIN FETCH
+    @Query("SELECT c FROM CargoDamage c " +
+           "LEFT JOIN FETCH c.document d " +
+           "LEFT JOIN FETCH d.owner " +
+           "LEFT JOIN FETCH c.status " +
+           "LEFT JOIN FETCH c.doneBy " +
            "WHERE c.active = true")
     Page<CargoDamageProjection> findAllActiveProjections(Pageable pageable);
     
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.refeRequest as refeRequest, " +
            "c.description as description, c.quotationContractNum as quotationContractNum, " +
            "c.dateRequest as dateRequest, c.dateContract as dateContract, " +
-           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
-           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
-           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
-           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
-           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
-           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
-           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "c.document.id as document_id, c.document.fileName as document_fileName, c.document.originalFileName as document_originalFileName, " +
+           "c.document.filePath as document_filePath, c.document.contentType as document_contentType, c.document.fileSize as document_fileSize, " +
+           "c.document.createdAt as document_createdAt, c.document.updatedAt as document_updatedAt, c.document.active as document_active, " +
+           "c.document.status as document_status, c.document.version as document_version, c.document.expirationDate as document_expirationDate, " +
+           "c.document.expiryDate as document_expiryDate, c.document.expiryAlertSent as document_expiryAlertSent, " +
+           "c.document.owner.id as document_owner_id, c.document.owner.fullName as document_owner_fullName, " +
+           "c.document.owner.username as document_owner_username, c.document.owner.email as document_owner_email, " +
            "c.status.id as status_id, c.status.name as status_name, " +
            "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username " +
            "FROM CargoDamage c " +
-           "JOIN c.document d " +
-           "JOIN d.owner " +
            "WHERE c.active = true AND " +
            "(LOWER(c.refeRequest) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
@@ -71,36 +59,32 @@ public interface CargoDamageRepository extends JpaRepository<CargoDamage, Long> 
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.refeRequest as refeRequest, " +
            "c.description as description, c.quotationContractNum as quotationContractNum, " +
            "c.dateRequest as dateRequest, c.dateContract as dateContract, " +
-           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
-           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
-           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
-           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
-           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
-           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
-           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "c.document.id as document_id, c.document.fileName as document_fileName, c.document.originalFileName as document_originalFileName, " +
+           "c.document.filePath as document_filePath, c.document.contentType as document_contentType, c.document.fileSize as document_fileSize, " +
+           "c.document.createdAt as document_createdAt, c.document.updatedAt as document_updatedAt, c.document.active as document_active, " +
+           "c.document.status as document_status, c.document.version as document_version, c.document.expirationDate as document_expirationDate, " +
+           "c.document.expiryDate as document_expiryDate, c.document.expiryAlertSent as document_expiryAlertSent, " +
+           "c.document.owner.id as document_owner_id, c.document.owner.fullName as document_owner_fullName, " +
+           "c.document.owner.username as document_owner_username, c.document.owner.email as document_owner_email, " +
            "c.status.id as status_id, c.status.name as status_name, " +
            "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username " +
            "FROM CargoDamage c " +
-           "JOIN c.document d " +
-           "JOIN d.owner " +
            "WHERE c.active = true AND c.status.id = :statusId")
     Page<CargoDamageProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
     
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.refeRequest as refeRequest, " +
            "c.description as description, c.quotationContractNum as quotationContractNum, " +
            "c.dateRequest as dateRequest, c.dateContract as dateContract, " +
-           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
-           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
-           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
-           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
-           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
-           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
-           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "c.document.id as document_id, c.document.fileName as document_fileName, c.document.originalFileName as document_originalFileName, " +
+           "c.document.filePath as document_filePath, c.document.contentType as document_contentType, c.document.fileSize as document_fileSize, " +
+           "c.document.createdAt as document_createdAt, c.document.updatedAt as document_updatedAt, c.document.active as document_active, " +
+           "c.document.status as document_status, c.document.version as document_version, c.document.expirationDate as document_expirationDate, " +
+           "c.document.expiryDate as document_expiryDate, c.document.expiryAlertSent as document_expiryAlertSent, " +
+           "c.document.owner.id as document_owner_id, c.document.owner.fullName as document_owner_fullName, " +
+           "c.document.owner.username as document_owner_username, c.document.owner.email as document_owner_email, " +
            "c.status.id as status_id, c.status.name as status_name, " +
            "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username " +
            "FROM CargoDamage c " +
-           "JOIN c.document d " +
-           "JOIN d.owner " +
            "WHERE c.active = true AND c.document.id = :documentId")
     Page<CargoDamageProjection> findByActiveTrueAndDocumentIdProjections(@Param("documentId") Long documentId, Pageable pageable);
     
