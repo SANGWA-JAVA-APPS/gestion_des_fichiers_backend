@@ -758,22 +758,27 @@ with this exmple:
 	responsive on small devices
 
 
+- great, i would also like to ask you as a pro frontend developer, to choose the best galaxy animation that moves stars slowly having the stars	
+	 sparkling. first choose the bes and place behind the login bg and make the background look like galaxy.
+- can the backgroundground you have put get mixed with another which is almost similar to it and make the gradient movement, you can choose more that two in total
+	but they all have to be alsmost similar to the one you have put, the gradient movement must be moving and moving moderately slowly.
+- is the login card responsive ?
+- i would like to put the image located in src/assets/cloud-files.png on the left side and position it in the left part centered vertically and horizontally. make 
+	the image bouncing indefinitely. the image is 128px.
+- i would like all the items on the login page to fit in, try to:
+	- reduce the header paddings
+	- reduce the header title size a little
+	- reduce some paddings on the login card and remove the labels and stay with the existing placeholders
+	- professionally think of another trick to use so that even the footer can be fitting on the layout so that
+	the whole page doesn't need to scroll
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- i would like to make the whole login card to be #2e7985 and mix it with #5e204b in a gradient mode, choose with gradient to use. make the border a light version of
+	#2e7985 and put some little shadow on the whole login card.
+- on the footer, add the text on the right powered by codeguru as a link clickable that when clicked leads to a new tab to this address https://codeguru-pro.com/
+	in all, remember the responsiveness.
+- darken the border and reduce border radius on the login radius a bit
+- inspect the colors we have used on that ranges around #2e7985 and propose the best background color that the login header has to be.
+- in the NormeLoiComponent
 
 
 

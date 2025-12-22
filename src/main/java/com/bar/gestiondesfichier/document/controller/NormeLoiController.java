@@ -45,10 +45,8 @@ public class NormeLoiController {
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
 
-    public NormeLoiController(NormeLoiRepository normeLoiRepository,
-            DocumentUploadService documentUploadService,
-            DocumentRepository documentRepository,
-            AccountRepository accountRepository) {
+    public NormeLoiController(NormeLoiRepository normeLoiRepository, DocumentUploadService documentUploadService,
+            DocumentRepository documentRepository, AccountRepository accountRepository) {
         this.normeLoiRepository = normeLoiRepository;
         this.documentUploadService = documentUploadService;
         this.documentRepository = documentRepository;
@@ -135,9 +133,7 @@ public class NormeLoiController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Norme loi created successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request data or missing file")})
-    public ResponseEntity<Map<String, Object>> createNormeLoi(
-            @RequestPart("normeLoi") NormeLoi normeLoi,
-            @RequestPart("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> createNormeLoi(@RequestPart("normeLoi") NormeLoi normeLoi, @RequestPart("file") MultipartFile file) {
         try {
             log.info("Creating new norme loi: {}", normeLoi.getReference());
 
@@ -155,10 +151,9 @@ public class NormeLoiController {
             }
 
             // Check if reference already exists
-            if (normeLoiRepository.existsByReferenceAndActiveTrue(normeLoi.getReference())) {
-                return ResponseUtil.badRequest("Norme loi with this reference already exists");
-            }
-
+//            if (normeLoiRepository.existsByReferenceAndActiveTrue(normeLoi.getReference())) {
+//                return ResponseUtil.badRequest("Norme loi with this reference already exists");
+//            }
             // Get the current user (owner) for the document
             Account owner = normeLoi.getDoneBy();
 
@@ -198,13 +193,10 @@ public class NormeLoiController {
 
                 // Extract unique filename from path
                 uniqueFileName = Paths.get(filePath).getFileName().toString();
-
+                log.info("uniqueFileName  : {}", uniqueFileName);
                 // Generate original filename
-                originalFileName = documentUploadService.generateOriginalFileName(
-                        "Norme_Loi",
-                        normeLoi.getReference(),
-                        fileExtension
-                );
+//                originalFileName = documentUploadService.generateOriginalFileName("Norme_Loi", normeLoi.getReference(), fileExtension);
+                originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(), normeLoi.getReference(), fileExtension);
 
                 log.info("File uploaded successfully: {}", filePath);
             } catch (IOException e) {
@@ -213,8 +205,7 @@ public class NormeLoiController {
             }
 
             // Initialize the document using DocumentUploadService
-            Document document = documentUploadService.initializeDocument(
-                    uniqueFileName, originalFileName, contentType, fileSize, filePath, actualOwner);
+            Document document = documentUploadService.initializeDocument(uniqueFileName, originalFileName, contentType, fileSize, filePath, actualOwner);
 
             // Save the document first
             Document savedDocument = documentRepository.save(document);

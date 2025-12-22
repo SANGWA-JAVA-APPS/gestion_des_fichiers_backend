@@ -39,16 +39,19 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
             + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
             + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "a.status.id as status_id, a.status.name as status_name, "
-            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
-            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "owner.id as document_owner_id, owner.fullName as document_owner_fullName, "
+            + "owner.username as document_owner_username, owner.email as document_owner_email, "
+            + "s.id as status_id, s.name as status_name, "
+            + "db.id as doneBy_id, db.fullName as doneBy_fullName, db.username as doneBy_username, "
+            + "sc.id as sectionCategory_id, sc.name as sectionCategory_name "
             + "FROM AccordConcession a "
             + "JOIN a.document d "
-            + "JOIN d.owner "
+            + "JOIN d.owner owner "
+            + "JOIN a.status s "
+            + "JOIN a.doneBy db "
+            + "LEFT JOIN a.sectionCategory sc "
             + "WHERE a.active = true AND "
-            + "(LOWER(a.numeroAccord) LIKE LOWER(CONCAT('%', :search, '%')) OR  "
+            + "(LOWER(a.numeroAccord) LIKE LOWER(CONCAT('%', :search, '%')) OR "
             + "LOWER(a.objetConcession) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<AccordConcessionProjection> findByActiveTrueAndNumeroAccordOrObjetConcessionContainingProjections(@Param("search") String search, Pageable pageable);
 
@@ -63,15 +66,18 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
             + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
             + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "a.status.id as status_id, a.status.name as status_name, "
-            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
-            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "owner.id as document_owner_id, owner.fullName as document_owner_fullName, "
+            + "owner.username as document_owner_username, owner.email as document_owner_email, "
+            + "s.id as status_id, s.name as status_name, "
+            + "db.id as doneBy_id, db.fullName as doneBy_fullName, db.username as doneBy_username, "
+            + "sc.id as sectionCategory_id, sc.name as sectionCategory_name "
             + "FROM AccordConcession a "
             + "JOIN a.document d "
-            + "JOIN d.owner "
-            + "WHERE a.active = true AND a.status.id = :statusId")
+            + "JOIN d.owner owner "
+            + "JOIN a.status s "
+            + "JOIN a.doneBy db "
+            + "LEFT JOIN a.sectionCategory sc "
+            + "WHERE a.active = true AND s.id = :statusId")
     Page<AccordConcessionProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
 
     @Query("SELECT a.id as id, a.dateTime as dateTime, a.contratConcession as contratConcession, "
@@ -85,15 +91,18 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
             + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
             + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "a.status.id as status_id, a.status.name as status_name, "
-            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
-            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "owner.id as document_owner_id, owner.fullName as document_owner_fullName, "
+            + "owner.username as document_owner_username, owner.email as document_owner_email, "
+            + "s.id as status_id, s.name as status_name, "
+            + "db.id as doneBy_id, db.fullName as doneBy_fullName, db.username as doneBy_username, "
+            + "sc.id as sectionCategory_id, sc.name as sectionCategory_name "
             + "FROM AccordConcession a "
             + "JOIN a.document d "
-            + "JOIN d.owner "
-            + "WHERE a.active = true AND a.sectionCategory.id = :sectionCategoryId")
+            + "JOIN d.owner owner "
+            + "JOIN a.status s "
+            + "JOIN a.doneBy db "
+            + "LEFT JOIN a.sectionCategory sc "
+            + "WHERE a.active = true AND sc.id = :sectionCategoryId")
     Page<AccordConcessionProjection> findByActiveTrueAndSectionCategoryIdProjections(@Param("sectionCategoryId") Long sectionCategoryId, Pageable pageable);
 
     @Query("SELECT a.id as id, a.dateTime as dateTime, a.contratConcession as contratConcession, "
@@ -107,15 +116,18 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
             + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
             + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "a.status.id as status_id, a.status.name as status_name, "
-            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
-            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "owner.id as document_owner_id, owner.fullName as document_owner_fullName, "
+            + "owner.username as document_owner_username, owner.email as document_owner_email, "
+            + "s.id as status_id, s.name as status_name, "
+            + "db.id as doneBy_id, db.fullName as doneBy_fullName, db.username as doneBy_username, "
+            + "sc.id as sectionCategory_id, sc.name as sectionCategory_name "
             + "FROM AccordConcession a "
             + "JOIN a.document d "
-            + "JOIN d.owner "
-            + "WHERE a.active = true AND a.document.id = :documentId")
+            + "JOIN d.owner owner "
+            + "JOIN a.status s "
+            + "JOIN a.doneBy db "
+            + "LEFT JOIN a.sectionCategory sc "
+            + "WHERE a.active = true AND d.id = :documentId")
     Page<AccordConcessionProjection> findByActiveTrueAndDocumentIdProjections(@Param("documentId") Long documentId, Pageable pageable);
 
     Page<AccordConcession> findByActiveTrueAndSectionCategory_Id(Long sectionCategoryId, Pageable pageable);
@@ -136,14 +148,17 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
             + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
             + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "a.status.id as status_id, a.status.name as status_name, "
-            + "a.doneBy.id as doneBy_id, a.doneBy.fullName as doneBy_fullName, a.doneBy.username as doneBy_username, "
-            + "a.sectionCategory.id as sectionCategory_id, a.sectionCategory.name as sectionCategory_name "
+            + "owner.id as document_owner_id, owner.fullName as document_owner_fullName, "
+            + "owner.username as document_owner_username, owner.email as document_owner_email, "
+            + "s.id as status_id, s.name as status_name, "
+            + "db.id as doneBy_id, db.fullName as doneBy_fullName, db.username as doneBy_username, "
+            + "sc.id as sectionCategory_id, sc.name as sectionCategory_name "
             + "FROM AccordConcession a "
             + "JOIN a.document d "
-            + "JOIN d.owner "
+            + "JOIN d.owner owner "
+            + "JOIN a.status s "
+            + "JOIN a.doneBy db "
+            + "LEFT JOIN a.sectionCategory sc "
             + "WHERE a.active = true")
     Page<AccordConcessionProjection> findAllActiveProjections(Pageable pageable);
 
@@ -152,4 +167,52 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
     Optional<AccordConcession> findByContratConcessionAndActiveTrue(String contratConcession);
 
     boolean existsByContratConcessionAndActiveTrue(String contratConcession);
+
+    // Entity-based queries with JOIN FETCH for eager loading
+    @Query("SELECT a FROM AccordConcession a "
+            + "JOIN FETCH a.document d "
+            + "JOIN FETCH d.owner "
+            + "JOIN FETCH a.status "
+            + "JOIN FETCH a.doneBy "
+            + "LEFT JOIN FETCH a.sectionCategory "
+            + "WHERE a.active = true")
+    Page<AccordConcession> findAllActiveWithDetails(Pageable pageable);
+
+    @Query("SELECT a FROM AccordConcession a "
+            + "JOIN FETCH a.document d "
+            + "JOIN FETCH d.owner "
+            + "JOIN FETCH a.status "
+            + "JOIN FETCH a.doneBy "
+            + "LEFT JOIN FETCH a.sectionCategory "
+            + "WHERE a.active = true AND "
+            + "(LOWER(a.numeroAccord) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+            + "LOWER(a.objetConcession) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<AccordConcession> findByActiveTrueAndNumeroAccordOrObjetConcessionContainingWithDetails(@Param("search") String search, Pageable pageable);
+
+    @Query("SELECT a FROM AccordConcession a "
+            + "JOIN FETCH a.document d "
+            + "JOIN FETCH d.owner "
+            + "JOIN FETCH a.status "
+            + "JOIN FETCH a.doneBy "
+            + "LEFT JOIN FETCH a.sectionCategory "
+            + "WHERE a.active = true AND a.status.id = :statusId")
+    Page<AccordConcession> findByActiveTrueAndStatusIdWithDetails(@Param("statusId") Long statusId, Pageable pageable);
+
+    @Query("SELECT a FROM AccordConcession a "
+            + "JOIN FETCH a.document d "
+            + "JOIN FETCH d.owner "
+            + "JOIN FETCH a.status "
+            + "JOIN FETCH a.doneBy "
+            + "LEFT JOIN FETCH a.sectionCategory "
+            + "WHERE a.active = true AND a.sectionCategory.id = :sectionCategoryId")
+    Page<AccordConcession> findByActiveTrueAndSectionCategoryIdWithDetails(@Param("sectionCategoryId") Long sectionCategoryId, Pageable pageable);
+
+    @Query("SELECT a FROM AccordConcession a "
+            + "JOIN FETCH a.document d "
+            + "JOIN FETCH d.owner "
+            + "JOIN FETCH a.status "
+            + "JOIN FETCH a.doneBy "
+            + "LEFT JOIN FETCH a.sectionCategory "
+            + "WHERE a.active = true AND a.document.id = :documentId")
+    Page<AccordConcession> findByActiveTrueAndDocumentIdWithDetails(@Param("documentId") Long documentId, Pageable pageable);
 }

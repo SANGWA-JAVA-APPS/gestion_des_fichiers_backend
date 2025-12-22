@@ -19,15 +19,18 @@ public interface DocStatusRepository extends JpaRepository<DocStatus, Long> {
 
     // Pagination methods
     Page<DocStatus> findByActiveTrue(Pageable pageable);
-    
+
     // Projection methods
-    @Query("SELECT d.id as id, d.name as name, d.description as description, d.active as active " +
-           "FROM DocStatus d WHERE d.active = true")
+    @Query("SELECT d.id as id, d.name as name, d.description as description, d.active as active "
+            + "FROM DocStatus d WHERE d.active = true ORDER BY d.id asc")
     Page<DocStatusProjection> findAllActiveProjections(Pageable pageable);
-    
+
     // Specific queries
     Optional<DocStatus> findByIdAndActiveTrue(Long id);
+
     Optional<DocStatus> findByNameAndActiveTrue(String name);
+
     List<DocStatus> findByActiveTrueOrderByName();
+
     boolean existsByNameAndActiveTrue(String name);
 }

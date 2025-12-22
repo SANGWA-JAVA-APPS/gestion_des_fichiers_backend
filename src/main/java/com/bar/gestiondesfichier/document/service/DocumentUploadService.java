@@ -22,7 +22,6 @@ import java.util.Optional;
  * Service for handling document upload operations including version management
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class DocumentUploadService {
 
@@ -31,13 +30,18 @@ public class DocumentUploadService {
     @Value("${app.upload.dir:uploads}")
     private String uploadBaseDir;
 
+    public DocumentUploadService(DocumentRepository documentRepository) {
+        this.documentRepository = documentRepository;
+    }
+
     /**
-     * Upload a file to the specified folder within the application context root.
-     * Creates the folder if it doesn't exist.
-     * 
+     * Upload a file to the specified folder within the application context
+     * root. Creates the folder if it doesn't exist.
+     *
      * @param file The multipart file to upload
      * @param folderName The folder name within the upload directory
-     * @return The relative file path (e.g., "uploads/accord_concession/filename.pdf")
+     * @return The relative file path (e.g.,
+     * "uploads/accord_concession/filename.pdf")
      * @throws IOException If file upload fails
      */
     public String uploadFile(MultipartFile file, String folderName) throws IOException {
@@ -59,7 +63,7 @@ public class DocumentUploadService {
 
         // Create the full upload path: uploadBaseDir/folderName
         Path uploadPath = Paths.get(uploadBaseDir, folderName);
-        
+
         // Create directory if it doesn't exist
         if (!Files.exists(uploadPath)) {
             log.info("Creating upload directory: {}", uploadPath.toAbsolutePath());
@@ -68,7 +72,7 @@ public class DocumentUploadService {
 
         // Full file path
         Path filePath = uploadPath.resolve(uniqueFileName);
-        
+
         log.info("Uploading file '{}' to: {}", originalFilename, filePath.toAbsolutePath());
 
         // Copy file to the target location (Replacing existing file with the same name)
@@ -82,68 +86,69 @@ public class DocumentUploadService {
     }
 
     /**
-     * Get the next version number for a document based on its original file name.
-     * If no existing document is found, returns "1.0".
-     * If existing document is found, increments the minor version (e.g., "1.5" -> "1.6").
-     * 
-     * @param originalFileName The original file name to check for existing versions
+     * Get the next version number for a document based on its original file
+     * name. If no existing document is found, returns "1.0". If existing
+     * document is found, increments the minor version (e.g., "1.5" -> "1.6").
+     *
+     * @param originalFileName The original file name to check for existing
+     * versions
      * @return The next version number as a string (e.g., "1.0", "1.1", "2.5")
      */
     public String getNextVersionForDocument(String originalFileName) {
         log.debug("Checking version for document with original file name: {}", originalFileName);
-        
+
         Optional<Document> existingDocOpt = documentRepository
-            .findTopByOriginalFileNameOrderByIdDesc(originalFileName);
-        
+                .findTopByOriginalFileNameOrderByIdDesc(originalFileName);
+
         if (existingDocOpt.isEmpty()) {
-            log.info("No existing document found with name '{}'. Setting version to 1.0", 
+            log.info("No existing document found with name '{}'. Setting version to 1.0",
                     originalFileName);
             return "1.0";
         }
-        
+
         Document existingDoc = existingDocOpt.get();
         String currentVersion = existingDoc.getVersion();
-        
+
         return incrementVersion(currentVersion, originalFileName);
     }
 
     /**
-     * Increment the version number. Parses the current version and increments the minor version.
-     * Format: major.minor (e.g., "1.5" -> "1.6")
-     * 
+     * Increment the version number. Parses the current version and increments
+     * the minor version. Format: major.minor (e.g., "1.5" -> "1.6")
+     *
      * @param currentVersion The current version string to increment
      * @param originalFileName The original file name (used for logging)
      * @return The incremented version string, or "1.0" if parsing fails
      */
     public String incrementVersion(String currentVersion, String originalFileName) {
         if (currentVersion == null || currentVersion.trim().isEmpty()) {
-            log.info("Existing document '{}' has no version. Setting new version to 1.0", 
+            log.info("Existing document '{}' has no version. Setting new version to 1.0",
                     originalFileName);
             return "1.0";
         }
-        
+
         try {
             String[] versionParts = currentVersion.split("\\.");
-            
+
             if (versionParts.length == 0) {
                 log.warn("Version '{}' has no parts. Using default '1.0'", currentVersion);
                 return "1.0";
             }
-            
+
             int majorVersion = Integer.parseInt(versionParts[0]);
             int minorVersion = versionParts.length > 1 ? Integer.parseInt(versionParts[1]) : 0;
-            
+
             // Increment minor version
             minorVersion++;
             String newVersion = majorVersion + "." + minorVersion;
-            
-            log.info("Found existing document '{}' with version {}. New version will be: {}", 
+
+            log.info("Found existing document '{}' with version {}. New version will be: {}",
                     originalFileName, currentVersion, newVersion);
-            
+
             return newVersion;
-            
+
         } catch (NumberFormatException e) {
-            log.warn("Could not parse version '{}' for document '{}'. Using default '1.0'. Error: {}", 
+            log.warn("Could not parse version '{}' for document '{}'. Using default '1.0'. Error: {}",
                     currentVersion, originalFileName, e.getMessage());
             return "1.0";
         }
@@ -151,63 +156,63 @@ public class DocumentUploadService {
 
     /**
      * Check if a document with the given original file name already exists.
-     * 
+     *
      * @param originalFileName The original file name to check
      * @return true if a document exists, false otherwise
      */
     public boolean documentExists(String originalFileName) {
         Optional<Document> existingDoc = documentRepository
-            .findTopByOriginalFileNameOrderByIdDesc(originalFileName);
-        
+                .findTopByOriginalFileNameOrderByIdDesc(originalFileName);
+
         boolean exists = existingDoc.isPresent();
         log.debug("Document with name '{}' exists: {}", originalFileName, exists);
-        
+
         return exists;
     }
 
     /**
      * Get the latest document by original file name.
-     * 
+     *
      * @param originalFileName The original file name to search for
      * @return Optional containing the latest document if found, empty otherwise
      */
     public Optional<Document> getLatestDocumentByOriginalFileName(String originalFileName) {
         log.debug("Fetching latest document with original file name: {}", originalFileName);
-        
+
         return documentRepository.findTopByOriginalFileNameOrderByIdDesc(originalFileName);
     }
 
     /**
-     * Get the current version of the latest document with the given original file name.
-     * Returns "1.0" if no document is found.
-     * 
+     * Get the current version of the latest document with the given original
+     * file name. Returns "1.0" if no document is found.
+     *
      * @param originalFileName The original file name to check
      * @return The current version string, or "1.0" if no document exists
      */
     public String getCurrentVersion(String originalFileName) {
         Optional<Document> existingDoc = getLatestDocumentByOriginalFileName(originalFileName);
-        
+
         if (existingDoc.isEmpty()) {
-            log.debug("No document found with name '{}'. Returning default version 1.0", 
+            log.debug("No document found with name '{}'. Returning default version 1.0",
                     originalFileName);
             return "1.0";
         }
-        
+
         String version = existingDoc.get().getVersion();
         if (version == null || version.trim().isEmpty()) {
-            log.warn("Document '{}' has null or empty version. Returning default 1.0", 
+            log.warn("Document '{}' has null or empty version. Returning default 1.0",
                     originalFileName);
             return "1.0";
         }
-        
+
         log.debug("Current version for document '{}' is: {}", originalFileName, version);
         return version;
     }
 
     /**
-     * Parse version string into major and minor components.
-     * Returns an array [major, minor]. If parsing fails, returns [1, 0].
-     * 
+     * Parse version string into major and minor components. Returns an array
+     * [major, minor]. If parsing fails, returns [1, 0].
+     *
      * @param version The version string to parse (e.g., "2.5")
      * @return Array of [majorVersion, minorVersion]
      */
@@ -216,23 +221,23 @@ public class DocumentUploadService {
             log.warn("Cannot parse null or empty version. Returning [1, 0]");
             return new int[]{1, 0};
         }
-        
+
         try {
             String[] parts = version.split("\\.");
-            
+
             if (parts.length == 0) {
                 log.warn("Version '{}' has no parts. Returning [1, 0]", version);
                 return new int[]{1, 0};
             }
-            
+
             int major = Integer.parseInt(parts[0]);
             int minor = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
-            
+
             log.debug("Parsed version '{}' to major={}, minor={}", version, major, minor);
             return new int[]{major, minor};
-            
+
         } catch (NumberFormatException e) {
-            log.warn("Failed to parse version '{}'. Returning [1, 0]. Error: {}", 
+            log.warn("Failed to parse version '{}'. Returning [1, 0]. Error: {}",
                     version, e.getMessage());
             return new int[]{1, 0};
         }
@@ -240,7 +245,7 @@ public class DocumentUploadService {
 
     /**
      * Build a version string from major and minor version numbers.
-     * 
+     *
      * @param major The major version number
      * @param minor The minor version number
      * @return The formatted version string (e.g., "2.5")
@@ -252,10 +257,10 @@ public class DocumentUploadService {
     }
 
     /**
-     * Extract file extension from filename or content type.
-     * Returns the extension with dot (e.g., ".pdf", ".docx").
-     * Falls back to ".pdf" if extension cannot be determined.
-     * 
+     * Extract file extension from filename or content type. Returns the
+     * extension with dot (e.g., ".pdf", ".docx"). Falls back to ".pdf" if
+     * extension cannot be determined.
+     *
      * @param filename The filename to extract extension from (can be null)
      * @param contentType The content type (can be null)
      * @return The file extension with dot (e.g., ".pdf")
@@ -270,7 +275,7 @@ public class DocumentUploadService {
                 return extension.toLowerCase();
             }
         }
-        
+
         // Fallback to content type
         if (contentType != null && !contentType.trim().isEmpty()) {
             String extension = getExtensionFromContentType(contentType);
@@ -279,16 +284,16 @@ public class DocumentUploadService {
                 return extension;
             }
         }
-        
+
         // Default fallback
-        log.debug("Could not extract extension from filename '{}' or content type '{}'. Using default '.pdf'", 
+        log.debug("Could not extract extension from filename '{}' or content type '{}'. Using default '.pdf'",
                 filename, contentType);
         return ".pdf";
     }
 
     /**
      * Get file extension from content type.
-     * 
+     *
      * @param contentType The MIME content type
      * @return The file extension with dot
      */
@@ -296,14 +301,14 @@ public class DocumentUploadService {
         if (contentType == null || contentType.trim().isEmpty()) {
             return ".pdf";
         }
-        
+
         String type = contentType.toLowerCase().trim();
-        
+
         // Remove charset if present (e.g., "application/pdf; charset=UTF-8")
         if (type.contains(";")) {
             type = type.substring(0, type.indexOf(";")).trim();
         }
-        
+
         // Map common content types to extensions
         switch (type) {
             case "application/pdf":
@@ -343,7 +348,7 @@ public class DocumentUploadService {
 
     /**
      * Generate a unique filename with proper extension.
-     * 
+     *
      * @param prefix The prefix for the filename (e.g., "accord_concession")
      * @param extension The file extension with dot (e.g., ".pdf")
      * @return The unique filename (e.g., "accord_concession_uuid.pdf")
@@ -357,11 +362,12 @@ public class DocumentUploadService {
 
     /**
      * Generate an original filename with proper extension.
-     * 
+     *
      * @param prefix The prefix for the filename (e.g., "Accord_Concession")
      * @param identifier The identifier (e.g., record number)
      * @param extension The file extension with dot (e.g., ".pdf")
-     * @return The original filename (e.g., "Accord_Concession_ACC-2025-001.pdf")
+     * @return The original filename (e.g.,
+     * "Accord_Concession_ACC-2025-001.pdf")
      */
     public String generateOriginalFileName(String prefix, String identifier, String extension) {
         String filename = prefix + "_" + identifier + extension;
@@ -370,9 +376,10 @@ public class DocumentUploadService {
     }
 
     /**
-     * Initialize a Document object with all required properties.
-     * Sets file metadata, owner, expiration date (5 years from now), version, and active status.
-     * 
+     * Initialize a Document object with all required properties. Sets file
+     * metadata, owner, expiration date (5 years from now), version, and active
+     * status.
+     *
      * @param uniqueFileName The unique filename stored on disk
      * @param originalFileName The original filename for version tracking
      * @param contentType The MIME content type of the file
@@ -381,36 +388,34 @@ public class DocumentUploadService {
      * @param owner The Account who owns/created the document
      * @return A fully initialized Document object ready to be saved
      */
-    public Document initializeDocument(String uniqueFileName, String originalFileName, 
-                                       String contentType, long fileSize, String filePath, 
-                                       Account owner) {
-        log.debug("Initializing document: uniqueFileName={}, originalFileName={}, contentType={}, fileSize={}, filePath={}", 
+    public Document initializeDocument(String uniqueFileName, String originalFileName, String contentType, long fileSize, String filePath, Account owner) {
+        log.debug("Initializing document: uniqueFileName={}, originalFileName={}, contentType={}, fileSize={}, filePath={}",
                 uniqueFileName, originalFileName, contentType, fileSize, filePath);
-        
+
         Document document = new Document();
-        
+
         // Set file metadata
         document.setFileName(uniqueFileName);
         document.setOriginalFileName(originalFileName);
         document.setContentType(contentType);
         document.setFileSize(fileSize);
         document.setFilePath(filePath);
-        
+
         // Set owner
         document.setOwner(owner);
-        
+
         // Set expiration date (default: 5 years from now)
         document.setExpirationDate(LocalDateTime.now().plusYears(5));
-        
+
         // Get and set the next version for this document
         String newVersion = getNextVersionForDocument(originalFileName);
         document.setVersion(newVersion);
-        
+
         // Set as active
         document.setActive(true);
-        
+
         log.info("Document initialized with version: {} for file: {}", newVersion, originalFileName);
-        
+
         return document;
     }
 }

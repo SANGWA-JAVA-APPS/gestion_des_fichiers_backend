@@ -63,7 +63,7 @@ public class AccordConcessionController {
         @ApiResponse(responseCode = "200", description = "Concession agreements retrieved successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
         @ApiResponse(responseCode = "403", description = "Session expired")})
-    public ResponseEntity<Page<AccordConcessionProjection>> getAllAccordConcession(
+    public ResponseEntity<Page<AccordConcession>> getAllAccordConcession(
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "20") Integer size,
             @Parameter(description = "Sort field") @RequestParam(defaultValue = "numeroAccord") String sort,
@@ -77,18 +77,18 @@ public class AccordConcessionController {
                     page, size, sort, direction, statusId, search);
 
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
-            Page<AccordConcessionProjection> accordConcessions;
+            Page<AccordConcession> accordConcessions;
 
             if (search != null && !search.trim().isEmpty()) {
-                accordConcessions = accordConcessionRepository.findByActiveTrueAndNumeroAccordOrObjetConcessionContainingProjections(search, pageable);
+                accordConcessions = accordConcessionRepository.findByActiveTrueAndNumeroAccordOrObjetConcessionContainingWithDetails(search, pageable);
             } else if (statusId != null) {
-                accordConcessions = accordConcessionRepository.findByActiveTrueAndStatusIdProjections(statusId, pageable);
+                accordConcessions = accordConcessionRepository.findByActiveTrueAndStatusIdWithDetails(statusId, pageable);
             } else if (sectionCategoryId != null) {
-                accordConcessions = accordConcessionRepository.findByActiveTrueAndSectionCategoryIdProjections(sectionCategoryId, pageable);
+                accordConcessions = accordConcessionRepository.findByActiveTrueAndSectionCategoryIdWithDetails(sectionCategoryId, pageable);
             } else if (documentId != null) {
-                accordConcessions = accordConcessionRepository.findByActiveTrueAndDocumentIdProjections(documentId, pageable);
+                accordConcessions = accordConcessionRepository.findByActiveTrueAndDocumentIdWithDetails(documentId, pageable);
             } else {
-                accordConcessions = accordConcessionRepository.findAllActiveProjections(pageable);
+                accordConcessions = accordConcessionRepository.findAllActiveWithDetails(pageable);
             }
 
             return ResponseEntity.ok(accordConcessions);

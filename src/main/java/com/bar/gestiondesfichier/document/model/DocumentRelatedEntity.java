@@ -9,8 +9,8 @@ import lombok.EqualsAndHashCode;
 import java.time.LocalDateTime;
 
 /**
- * Base class for all document-related entities
- * Contains common fields: date_time, doneby, docId
+ * Base class for all document-related entities Contains common fields:
+ * date_time, doneby, docId
  */
 @MappedSuperclass
 @Data
@@ -20,16 +20,16 @@ public abstract class DocumentRelatedEntity extends BaseEntity {
     @Column(name = "date_time", nullable = false)
     private LocalDateTime dateTime;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "doneby", nullable = false)
     private Account doneBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "doc_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "doc_id", nullable = true)
     private Document document;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "statut_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "statut_id", nullable = true)
     private DocStatus status;
 
     // Default constructor
@@ -38,11 +38,11 @@ public abstract class DocumentRelatedEntity extends BaseEntity {
         this.dateTime = LocalDateTime.now();
     }
 
-    // Constructor with required fields
+    // Constructor with required fields (document and status are optional)
     public DocumentRelatedEntity(Account doneBy, Document document, DocStatus status) {
         this();
         this.doneBy = doneBy;
-        this.document = document;
-        this.status = status;
+        this.document = document; // Can be null
+        this.status = status; // Can be null
     }
 }
