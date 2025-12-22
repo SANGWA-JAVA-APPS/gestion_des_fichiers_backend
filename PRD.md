@@ -639,14 +639,146 @@ by using mcp, analyse the database where we want to track doc.
 - in the controller of AccordConcessionController.java while creating a new document, 
 	- the system has to create the a new record from "files" table and link the "files" id to the "accord_concession" as the accord_concession is related to files
 	  through doc_id. put some random data into "files".
-- now in the 
-	- the system has to check if the "fileName" from "files" table exists, and
-	if it exists, it still uploads but the servsion increases by 1.
+- In the AccordConcessionController.java from line 159, the app initializes the Document object like this:  Document document = new Document(); and now it needs,
+	to check by FileName if the document exists before saving on line 173:  Document savedDocument, it checks the current version of the document by filename
+	 and increases that version by one by 1.
+- now  i want that functionality of check the version and by name to be in a service that you created in document.service called "DocumentUploadService.java",
+	and that functinality can be one or more functions with parameters, so dont change the functionality bu refactor for reusability.
+- on line 167 and 168 the extensions should be extracted fromt he file, not statically .pdf, so do it but that also should be done in the DocumentUploadService.java
+	service
+- i want to make the file upload functionality in "DocumentUploadService.java", as a method that accepts file (multipart) and folderName as parameters and uploads
+	 it on a application context root location and it has to check if the folderName exist, if not it creates it.
+- call that functionality in the "createAccordConcession" method and prepare the "createAccordConcession" post as a file upload method, add multipart @RequestParam
+- now i want the functionality of initializing the Document object to be part of "DocumentUploadService.java" so take the functionalty from line 218 and 236 to be in
+	"DocumentUploadService.java"
+- on line 174: if (file != null && !file.isEmpty()) { remove the else beause the user has to provide the document and return a meaningful message to frontend
+
+- By doing one controller at a time, now inside com.bar.gestiondesfichier.document.controller controllers, add the functionality on each post request of file upload as it is in the 
+	AccordConcessionController.java on createAccordConcession post method
+	as the following:
+	- // Prepare variables for document metadata
+            String contentType;
+            String fileExtension;
+            String uniqueFileName;
+            String originalFileName;
+            String filePath;
+
+	 if (file == null || file.isEmpty()) {
+	documentUploadService.uploadFile
+	fileExtension = documentUploadService.extractFileExtension
+	originalFileName = documentUploadService.generateOriginalFileName
+	documentUploadService.initializeDocument
+	documentRepository.save
+	accordConcessionRepository.save
+follow the structure of createAccordConcession post inside "DocumentUploadService.java"
 - in this location com.bar.gestiondesfichier.service from backend i would like to create a form upload  service class that can be used by any other class.
 	- the upload service should allow these types of documents: PDF, Word, Excel, CVS, PPT, EML, VSD, VSDX, the values can be set in application.properties.
 	- the file should be saved on the root of the application in a  folder called "/files", if the folder is not there it has to be created.
 	- the service should expect the documentType and there should be another folder created inside /files created(if not exits) with that name by in small letters
-	- the details of the file should be saved in the "files" table 
+	- the details of the file should be saved in the "files" table.
+
+- now find the src/components/document forms and locate the 
+- now the show me the modal ui from line 65 const handleShowModal = (item = null) => {, in NormeLoiComponent.jsx.
+- The NormeLoiComponent.jsx has issue while saving the form it is giving 500, which when you look at the backend it shows 
+	this: org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' is not supported, please verify the url matching between frontend
+	and backend.
+- the CommAssetLandComponent.jsx submission is giving 500 error, the backend is giving: org.springframework.web.multipart.support.MissingServletRequestPartException:
+	 Required part 'commAssetLand' is not present.
+- i am gettign this: Validation failed: Status is required on POST /api/document/cargo-damage
+- the api/document/permi-construction is giving the 400 error: Numero permis is required
+- the api/document/accord-concession is giving the 400 Numero accord is required
+- By using mcp, insert into the table called "countries" the names of the all countries in the world.
+- in the dashboard.jsx, i want you to use put on it background image which is located in /asset called "DashbaordBg.png", only on dashboard.jsx body, make it full
+	and static
+- inside DocumentComponent.jsx on line 53, the result is showing the text document.title instead of a chosed document title, please fix it.
+- in the same file what is the use of renderActiveComponent() on line 153?
+- in the side navigation in the same file <Card.Body className="p-0"> on line 64, i want to highlight the one that is chosen/clicked and unhighlight others
+- in the each of the forms under document there is a card that displays the document title based in the clicked document,
+	here is an example from "DocStatusComponent.jsx" on line 137 that displays the "document.docStatus" in <h4> tag, i want to you to split  the whole header
+	into 4 columns so that the title remains but next on the right yo put a column that has a reusable search component and that component has these:
+	- a dropdown that can be initialized items dynamically
+	- three textboxes one which with an event that can dnamically be managed(as a prop) while we call the component
+	- two dates textboxes that have onCahnge events that can can dnamically be managed(as a prop) while we call the component, so both will be for dates
+	date start and date end.
+	- a search button that can have access to all the items in the search component.
+	Do one file under src/components/document at a time
+- by taking an eample from "DocStatusComponent.jsx", on the header:
+	<Card.Header>
+              <Row className="align-items-center">
+                <Col xs={12} md={6} lg={3}>
+                  <h4 className="mb-0">
+                    {getText("document.docStatus", language)}
+                  </h4>
+                </Col>
+	is there a way you can try to put the search component  horizontally place in the header where the title and compenent and the buttons:
+	<Button  
+                    variant="primary"    
+                    size="sm"  
+                    className="me-2"                  
+                    onClick={() => handleShowModal()}>
+                    <i className="bi bi-plus-circle me-1"></i>
+                    {getText("common.add", language)}
+                  </Button>
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={loadData}>
+                    <i className="bi bi-arrow-clockwise me-1"></i>
+                    {getText("document.actions.refresh", language)}
+                  </Button> 
+	are a in the same row and each of the is in the Col? But also make sure the title and the search component have enough space
+- in DocumentStatus, on line 87, there is a navigation, i want to change the font size to a bit smaller, and put that into globa.scss
+- In DocumentComponent.jsx online 69 i have a div with a classdocument-management, i want you to check all over where it is defined including global.scss
+	and let me know.
+- In DocumentComponent.jsx online 178 on <SearchComponent,  iwant to console.log all values entered in the component when i click on 
+	onSearch={handleSearch} searchButtonText="Search"
+- i want to reuse the searchcomponent as it is used in <SearchComponent on line 187, the default items in the dropdown should empty for now. the rest
+	items can be as the way they are in DocumentComponent.jsx in all documents under src/compoenents/document.
+- reuse the searchcomponent in document one by one
+
+
+- in DocStatusComponent.jsx, on line 178, there is: <SearchComponent and iwant the 
+1. visualize documents & edit documents
+2. Test and see the paginate 50 rec, 20 rec is working
+3. search date(s,e) (filtering by options).
+
+with this exmple:
+ <Card.Header>
+              <Row className="align-items-center">
+                <Col xs={12} md={6} lg={3}>
+                  <h4 className="mb-0">
+                    {getText("document.docStatus", language)}
+                  </h4>
+                </Col>
+- find all h4 tag i under header in src/components/document and restructure the only <h4> for reusability start by the 
+	DocStatusComponent.jsx and work on other files one by one	
+- in AdminDashboard.jsx, show me how i can make 
+<Container 
+      fluid  fro line 231 responsive so that the left navigation can become humburger menu and the content part can be still
+	responsive on small devices
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

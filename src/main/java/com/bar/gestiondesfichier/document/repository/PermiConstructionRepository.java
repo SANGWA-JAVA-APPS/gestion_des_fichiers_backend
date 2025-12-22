@@ -37,8 +37,20 @@ public interface PermiConstructionRepository extends JpaRepository<PermiConstruc
            "p.dateExpiration as dateExpiration, p.autoriteDelivrance as autoriteDelivrance, " +
            "p.referenceTitreFoncier as referenceTitreFoncier, p.refPermisConstuire as refPermisConstuire, " +
            "p.dateValidation as dateValidation, p.dateEstimeeTravaux as dateEstimeeTravaux, " +
-           "p.document as document, p.status as status, p.doneBy as doneBy, p.sectionCategory as sectionCategory " +
-           "FROM PermiConstruction p WHERE p.active = true")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "p.status.id as status_id, p.status.name as status_name, " +
+           "p.doneBy.id as doneBy_id, p.doneBy.fullName as doneBy_fullName, p.doneBy.username as doneBy_username, " +
+           "p.sectionCategory.id as sectionCategory_id, p.sectionCategory.name as sectionCategory_name " +
+           "FROM PermiConstruction p " +
+           "JOIN p.document d " +
+           "JOIN d.owner " +
+           "WHERE p.active = true")
     Page<PermiConstructionProjection> findAllActiveProjections(Pageable pageable);
     
     // Direct projection methods for improved performance
@@ -47,8 +59,20 @@ public interface PermiConstructionRepository extends JpaRepository<PermiConstruc
            "p.dateExpiration as dateExpiration, p.autoriteDelivrance as autoriteDelivrance, " +
            "p.referenceTitreFoncier as referenceTitreFoncier, p.refPermisConstuire as refPermisConstuire, " +
            "p.dateValidation as dateValidation, p.dateEstimeeTravaux as dateEstimeeTravaux, " +
-           "p.document as document, p.status as status, p.doneBy as doneBy, p.sectionCategory as sectionCategory " +
-           "FROM PermiConstruction p WHERE p.active = true AND " +
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "p.status.id as status_id, p.status.name as status_name, " +
+           "p.doneBy.id as doneBy_id, p.doneBy.fullName as doneBy_fullName, p.doneBy.username as doneBy_username, " +
+           "p.sectionCategory.id as sectionCategory_id, p.sectionCategory.name as sectionCategory_name " +
+           "FROM PermiConstruction p " +
+           "JOIN p.document d " +
+           "JOIN d.owner " +
+           "WHERE p.active = true AND " +
            "(LOWER(p.numeroPermis) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(p.projet) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(p.localisation) LIKE LOWER(CONCAT('%', :search, '%')))")
@@ -59,8 +83,20 @@ public interface PermiConstructionRepository extends JpaRepository<PermiConstruc
            "p.dateExpiration as dateExpiration, p.autoriteDelivrance as autoriteDelivrance, " +
            "p.referenceTitreFoncier as referenceTitreFoncier, p.refPermisConstuire as refPermisConstuire, " +
            "p.dateValidation as dateValidation, p.dateEstimeeTravaux as dateEstimeeTravaux, " +
-           "p.document as document, p.status as status, p.doneBy as doneBy, p.sectionCategory as sectionCategory " +
-           "FROM PermiConstruction p WHERE p.active = true AND p.status.id = :statusId")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "p.status.id as status_id, p.status.name as status_name, " +
+           "p.doneBy.id as doneBy_id, p.doneBy.fullName as doneBy_fullName, p.doneBy.username as doneBy_username, " +
+           "p.sectionCategory.id as sectionCategory_id, p.sectionCategory.name as sectionCategory_name " +
+           "FROM PermiConstruction p " +
+           "JOIN p.document d " +
+           "JOIN d.owner " +
+           "WHERE p.active = true AND p.status.id = :statusId")
     Page<PermiConstructionProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
     
     @Query("SELECT p.id as id, p.dateTime as dateTime, p.numeroPermis as numeroPermis, " +
@@ -68,8 +104,20 @@ public interface PermiConstructionRepository extends JpaRepository<PermiConstruc
            "p.dateExpiration as dateExpiration, p.autoriteDelivrance as autoriteDelivrance, " +
            "p.referenceTitreFoncier as referenceTitreFoncier, p.refPermisConstuire as refPermisConstuire, " +
            "p.dateValidation as dateValidation, p.dateEstimeeTravaux as dateEstimeeTravaux, " +
-           "p.document as document, p.status as status, p.doneBy as doneBy, p.sectionCategory as sectionCategory " +
-           "FROM PermiConstruction p WHERE p.active = true AND p.document.id = :documentId")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "p.status.id as status_id, p.status.name as status_name, " +
+           "p.doneBy.id as doneBy_id, p.doneBy.fullName as doneBy_fullName, p.doneBy.username as doneBy_username, " +
+           "p.sectionCategory.id as sectionCategory_id, p.sectionCategory.name as sectionCategory_name " +
+           "FROM PermiConstruction p " +
+           "JOIN p.document d " +
+           "JOIN d.owner " +
+           "WHERE p.active = true AND p.document.id = :documentId")
     Page<PermiConstructionProjection> findByActiveTrueAndDocumentIdProjections(@Param("documentId") Long documentId, Pageable pageable);
     
     @Query("SELECT p.id as id, p.dateTime as dateTime, p.numeroPermis as numeroPermis, " +
@@ -77,8 +125,20 @@ public interface PermiConstructionRepository extends JpaRepository<PermiConstruc
            "p.dateExpiration as dateExpiration, p.autoriteDelivrance as autoriteDelivrance, " +
            "p.referenceTitreFoncier as referenceTitreFoncier, p.refPermisConstuire as refPermisConstuire, " +
            "p.dateValidation as dateValidation, p.dateEstimeeTravaux as dateEstimeeTravaux, " +
-           "p.document as document, p.status as status, p.doneBy as doneBy, p.sectionCategory as sectionCategory " +
-           "FROM PermiConstruction p WHERE p.active = true AND p.sectionCategory.id = :sectionCategoryId")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "p.status.id as status_id, p.status.name as status_name, " +
+           "p.doneBy.id as doneBy_id, p.doneBy.fullName as doneBy_fullName, p.doneBy.username as doneBy_username, " +
+           "p.sectionCategory.id as sectionCategory_id, p.sectionCategory.name as sectionCategory_name " +
+           "FROM PermiConstruction p " +
+           "JOIN p.document d " +
+           "JOIN d.owner " +
+           "WHERE p.active = true AND p.sectionCategory.id = :sectionCategoryId")
     Page<PermiConstructionProjection> findByActiveTrueAndSectionCategoryIdProjections(@Param("sectionCategoryId") Long sectionCategoryId, Pageable pageable);
     
     @Query("SELECT p.id as id, p.dateTime as dateTime, p.numeroPermis as numeroPermis, " +
@@ -86,8 +146,20 @@ public interface PermiConstructionRepository extends JpaRepository<PermiConstruc
            "p.dateExpiration as dateExpiration, p.autoriteDelivrance as autoriteDelivrance, " +
            "p.referenceTitreFoncier as referenceTitreFoncier, p.refPermisConstuire as refPermisConstuire, " +
            "p.dateValidation as dateValidation, p.dateEstimeeTravaux as dateEstimeeTravaux, " +
-           "p.document as document, p.status as status, p.doneBy as doneBy, p.sectionCategory as sectionCategory " +
-           "FROM PermiConstruction p WHERE p.active = true AND p.dateExpiration <= DATEADD(day, :days, CURRENT_TIMESTAMP)")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "p.status.id as status_id, p.status.name as status_name, " +
+           "p.doneBy.id as doneBy_id, p.doneBy.fullName as doneBy_fullName, p.doneBy.username as doneBy_username, " +
+           "p.sectionCategory.id as sectionCategory_id, p.sectionCategory.name as sectionCategory_name " +
+           "FROM PermiConstruction p " +
+           "JOIN p.document d " +
+           "JOIN d.owner " +
+           "WHERE p.active = true AND p.dateExpiration <= DATEADD(day, :days, CURRENT_TIMESTAMP)")
     Page<PermiConstructionProjection> findExpiringWithinDaysProjections(@Param("days") Integer days, Pageable pageable);
     
     Optional<PermiConstruction> findByIdAndActiveTrue(Long id);

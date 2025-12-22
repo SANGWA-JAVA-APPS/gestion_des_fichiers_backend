@@ -33,15 +33,37 @@ public interface CommCompPoliciesRepository extends JpaRepository<CommCompPolici
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.reference as reference, " +
            "c.description as description, c.policyStatus as policyStatus, c.version as version, " +
            "c.expirationDate as expirationDate, c.section as section, " +
-           "c.document as document, c.status as status, c.doneBy as doneBy " +
-           "FROM CommCompPolicies c WHERE c.active = true")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "c.status.id as status_id, c.status.name as status_name, " +
+           "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username " +
+           "FROM CommCompPolicies c " +
+           "JOIN c.document d " +
+           "JOIN d.owner " +
+           "WHERE c.active = true")
     Page<CommCompPoliciesProjection> findAllActiveProjections(Pageable pageable);
     
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.reference as reference, " +
            "c.description as description, c.policyStatus as policyStatus, c.version as version, " +
            "c.expirationDate as expirationDate, c.section as section, " +
-           "c.document as document, c.status as status, c.doneBy as doneBy " +
-           "FROM CommCompPolicies c WHERE c.active = true AND " +
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "c.status.id as status_id, c.status.name as status_name, " +
+           "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username " +
+           "FROM CommCompPolicies c " +
+           "JOIN c.document d " +
+           "JOIN d.owner " +
+           "WHERE c.active = true AND " +
            "(LOWER(c.reference) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.policyStatus) LIKE LOWER(CONCAT('%', :search, '%')))")
@@ -50,15 +72,37 @@ public interface CommCompPoliciesRepository extends JpaRepository<CommCompPolici
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.reference as reference, " +
            "c.description as description, c.policyStatus as policyStatus, c.version as version, " +
            "c.expirationDate as expirationDate, c.section as section, " +
-           "c.document as document, c.status as status, c.doneBy as doneBy " +
-           "FROM CommCompPolicies c WHERE c.active = true AND c.status.id = :statusId")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "c.status.id as status_id, c.status.name as status_name, " +
+           "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username " +
+           "FROM CommCompPolicies c " +
+           "JOIN c.document d " +
+           "JOIN d.owner " +
+           "WHERE c.active = true AND c.status.id = :statusId")
     Page<CommCompPoliciesProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
     
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.reference as reference, " +
            "c.description as description, c.policyStatus as policyStatus, c.version as version, " +
            "c.expirationDate as expirationDate, c.section as section, " +
-           "c.document as document, c.status as status, c.doneBy as doneBy " +
-           "FROM CommCompPolicies c WHERE c.active = true AND c.document.id = :documentId")
+           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
+           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
+           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
+           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
+           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
+           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
+           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
+           "c.status.id as status_id, c.status.name as status_name, " +
+           "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username " +
+           "FROM CommCompPolicies c " +
+           "JOIN c.document d " +
+           "JOIN d.owner " +
+           "WHERE c.active = true AND c.document.id = :documentId")
     Page<CommCompPoliciesProjection> findByActiveTrueAndDocumentIdProjections(@Param("documentId") Long documentId, Pageable pageable);
     
     Optional<CommCompPolicies> findByIdAndActiveTrue(Long id);

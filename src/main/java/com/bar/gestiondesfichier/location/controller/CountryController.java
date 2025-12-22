@@ -40,7 +40,7 @@ public class CountryController {
     })
     public ResponseEntity<Map<String, Object>> getAllCountries(
             @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "20") Integer size,
+            @RequestParam(defaultValue = "200") Integer size,
             @RequestParam(defaultValue = "name") String sort,
             @RequestParam(defaultValue = "asc") String direction) {
         try {

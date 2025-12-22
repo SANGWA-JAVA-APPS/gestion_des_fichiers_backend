@@ -34,15 +34,37 @@ public interface CertLicensesRepository extends JpaRepository<CertLicenses, Long
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
             + "c.agentCertifica as agentCertifica, c.numeroAgent as numeroAgent, "
             + "c.dateCertificate as dateCertificate, c.dureeCertificat as dureeCertificat, "
-            + "c.document as document, c.status as status, c.doneBy as doneBy "
-            + "FROM CertLicenses c WHERE c.active = true")
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "c.status.id as status_id, c.status.name as status_name, "
+            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username "
+            + "FROM CertLicenses c "
+            + "JOIN c.document d "
+            + "JOIN d.owner "
+            + "WHERE c.active = true")
     Page<CertLicensesProjection> findAllActiveProjections(Pageable pageable);
 
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
             + "c.agentCertifica as agentCertifica, c.numeroAgent as numeroAgent, "
             + "c.dateCertificate as dateCertificate, c.dureeCertificat as dureeCertificat, "
-            + "c.document as document, c.status as status, c.doneBy as doneBy "
-            + "FROM CertLicenses c WHERE c.active = true AND "
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "c.status.id as status_id, c.status.name as status_name, "
+            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username "
+            + "FROM CertLicenses c "
+            + "JOIN c.document d "
+            + "JOIN d.owner "
+            + "WHERE c.active = true AND "
             + "(LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')) OR "
             + "LOWER(c.agentCertifica) LIKE LOWER(CONCAT('%', :search, '%')) OR "
             + "LOWER(c.numeroAgent) LIKE LOWER(CONCAT('%', :search, '%')))")
@@ -51,22 +73,55 @@ public interface CertLicensesRepository extends JpaRepository<CertLicenses, Long
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
             + "c.agentCertifica as agentCertifica, c.numeroAgent as numeroAgent, "
             + "c.dateCertificate as dateCertificate, c.dureeCertificat as dureeCertificat, "
-            + "c.document as document, c.status as status, c.doneBy as doneBy "
-            + "FROM CertLicenses c WHERE c.active = true AND c.status.id = :statusId")
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "c.status.id as status_id, c.status.name as status_name, "
+            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username "
+            + "FROM CertLicenses c "
+            + "JOIN c.document d "
+            + "JOIN d.owner "
+            + "WHERE c.active = true AND c.status.id = :statusId")
     Page<CertLicensesProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
 
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
             + "c.agentCertifica as agentCertifica, c.numeroAgent as numeroAgent, "
             + "c.dateCertificate as dateCertificate, c.dureeCertificat as dureeCertificat, "
-            + "c.document as document, c.status as status, c.doneBy as doneBy "
-            + "FROM CertLicenses c WHERE c.active = true AND c.document.id = :documentId")
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "c.status.id as status_id, c.status.name as status_name, "
+            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username "
+            + "FROM CertLicenses c "
+            + "JOIN c.document d "
+            + "JOIN d.owner "
+            + "WHERE c.active = true AND c.document.id = :documentId")
     Page<CertLicensesProjection> findByActiveTrueAndDocumentIdProjections(@Param("documentId") Long documentId, Pageable pageable);
 
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
             + "c.agentCertifica as agentCertifica, c.numeroAgent as numeroAgent, "
             + "c.dateCertificate as dateCertificate, c.dureeCertificat as dureeCertificat, "
-            + "c.document as document, c.status as status, c.doneBy as doneBy "
-            + "FROM CertLicenses c WHERE c.active = true AND c.dateCertificate <= DATEADD(day, :days, CURRENT_TIMESTAMP)")
+            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
+            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
+            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
+            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
+            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
+            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
+            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
+            + "c.status.id as status_id, c.status.name as status_name, "
+            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username "
+            + "FROM CertLicenses c "
+            + "JOIN c.document d "
+            + "JOIN d.owner "
+            + "WHERE c.active = true AND c.dateCertificate <= DATEADD(day, :days, CURRENT_TIMESTAMP)")
     Page<CertLicensesProjection> findExpiringWithinDaysProjections(@Param("days") Integer days, Pageable pageable);
 
     Optional<CertLicenses> findByIdAndActiveTrue(Long id);

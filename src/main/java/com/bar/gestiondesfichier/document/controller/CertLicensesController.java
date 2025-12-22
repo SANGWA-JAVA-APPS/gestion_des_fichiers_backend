@@ -3,8 +3,13 @@ package com.bar.gestiondesfichier.document.controller;
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
 import com.bar.gestiondesfichier.document.model.CertLicenses;
+import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.CertLicensesProjection;
 import com.bar.gestiondesfichier.document.repository.CertLicensesRepository;
+import com.bar.gestiondesfichier.document.repository.DocumentRepository;
+import com.bar.gestiondesfichier.document.service.DocumentUploadService;
+import com.bar.gestiondesfichier.entity.Account;
+import com.bar.gestiondesfichier.repository.AccountRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,8 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,9 +39,18 @@ import java.util.Optional;
 public class CertLicensesController {
 
     private final CertLicensesRepository certLicensesRepository;
+    private final DocumentUploadService documentUploadService;
+    private final DocumentRepository documentRepository;
+    private final AccountRepository accountRepository;
 
-    public CertLicensesController(CertLicensesRepository certLicensesRepository) {
+    public CertLicensesController(CertLicensesRepository certLicensesRepository,
+                                  DocumentUploadService documentUploadService,
+                                  DocumentRepository documentRepository,
+                                  AccountRepository accountRepository) {
         this.certLicensesRepository = certLicensesRepository;
+        this.documentUploadService = documentUploadService;
+        this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
     }
 
     @GetMapping
@@ -107,13 +125,16 @@ public class CertLicensesController {
         }
     }
 
-    @PostMapping
-    @Operation(summary = "Create certificate & license", description = "Create a new certificate & license record")
+    @PostMapping(consumes = {"multipart/form-data"})
+    @Transactional
+    @Operation(summary = "Create certificate & license", description = "Create a new certificate & license record with file upload")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Certificate & license created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        @ApiResponse(responseCode = "400", description = "Invalid request data or missing file")
     })
-    public ResponseEntity<Map<String, Object>> createCertLicense(@RequestBody CertLicenses certLicense) {
+    public ResponseEntity<Map<String, Object>> createCertLicense(
+            @RequestPart("certLicense") CertLicenses certLicense,
+            @RequestPart("file") MultipartFile file) {
         try {
             log.info("Creating new certificate & license: {}", certLicense.getDescription());
             
@@ -126,15 +147,79 @@ public class CertLicensesController {
                 return ResponseUtil.badRequest("DoneBy (Account) is required");
             }
             
-            if (certLicense.getDocument() == null) {
-                return ResponseUtil.badRequest("Document is required");
-            }
-            
             if (certLicense.getStatus() == null) {
                 return ResponseUtil.badRequest("Status is required");
             }
-            
+
+            // Get the current user (owner) for the document
+            Account owner = certLicense.getDoneBy();
+
+            // Verify the account exists
+            Optional<Account> accountOpt = accountRepository.findById(owner.getId());
+            if (accountOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Account not found with ID: " + owner.getId());
+            }
+            Account actualOwner = accountOpt.get();
+
+            // Prepare variables for document metadata
+            String contentType;
+            String fileExtension;
+            String uniqueFileName;
+            String originalFileName;
+            String filePath;
+            long fileSize;
+
+            // Validate that file is provided (mandatory)
+            if (file == null || file.isEmpty()) {
+                log.warn("File upload is required but not provided for certificate & license: {}",
+                        certLicense.getDescription());
+                return ResponseUtil.badRequest("Document file is required. Please upload a file to create the certificate & license.");
+            }
+
+            // Handle file upload
+            log.info("File upload detected: {}", file.getOriginalFilename());
+
+            // Upload file and get file path
+            try {
+                filePath = documentUploadService.uploadFile(file, "cert_licenses");
+
+                // Extract information from uploaded file
+                contentType = file.getContentType();
+                fileSize = file.getSize();
+                fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
+
+                // Extract unique filename from path
+                uniqueFileName = Paths.get(filePath).getFileName().toString();
+
+                // Generate original filename (using ID if available, or description)
+                String identifier = certLicense.getId() != null ? certLicense.getId().toString() : 
+                                  certLicense.getDescription().replaceAll("[^a-zA-Z0-9]", "_");
+                originalFileName = documentUploadService.generateOriginalFileName(
+                        "Cert_Licenses",
+                        identifier,
+                        fileExtension
+                );
+
+                log.info("File uploaded successfully: {}", filePath);
+            } catch (IOException e) {
+                log.error("Failed to upload file", e);
+                return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
+            }
+
+            // Initialize the document using DocumentUploadService
+            Document document = documentUploadService.initializeDocument(
+                    uniqueFileName, originalFileName, contentType, fileSize, filePath, actualOwner);
+
+            // Save the document first
+            Document savedDocument = documentRepository.save(document);
+            log.info("Created document with ID: {} and version: {} for certificate & license: {}",
+                    savedDocument.getId(), savedDocument.getVersion(), certLicense.getDescription());
+
+            // Link the saved document to the certificate & license
+            certLicense.setDocument(savedDocument);
             certLicense.setActive(true);
+
+            // Save the certificate & license
             CertLicenses savedCertLicense = certLicensesRepository.save(certLicense);
             
             return ResponseUtil.success(savedCertLicense, "Certificate & license created successfully");

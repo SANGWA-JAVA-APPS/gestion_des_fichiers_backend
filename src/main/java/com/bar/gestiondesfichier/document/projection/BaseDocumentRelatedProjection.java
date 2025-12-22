@@ -1,5 +1,6 @@
 package com.bar.gestiondesfichier.document.projection;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -22,6 +23,25 @@ public interface BaseDocumentRelatedProjection {
         Long getId();
         String getFileName();
         String getOriginalFileName();
+        String getFilePath();
+        String getContentType();
+        Long getFileSize();
+        LocalDateTime getCreatedAt();
+        LocalDateTime getUpdatedAt();
+        Boolean getActive();
+        String getStatus();
+        String getVersion();
+        LocalDateTime getExpirationDate();
+        LocalDate getExpiryDate();
+        Boolean getExpiryAlertSent();
+        OwnerInfo getOwner();
+    }
+    
+    public interface OwnerInfo {
+        Long getId();
+        String getFullName();
+        String getUsername();
+        String getEmail();
     }
     
     public interface StatusInfo {

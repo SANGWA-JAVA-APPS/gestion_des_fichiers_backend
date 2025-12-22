@@ -2,9 +2,14 @@ package com.bar.gestiondesfichier.document.controller;
 
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.model.PermiConstruction;
 import com.bar.gestiondesfichier.document.projection.PermiConstructionProjection;
+import com.bar.gestiondesfichier.document.repository.DocumentRepository;
 import com.bar.gestiondesfichier.document.repository.PermiConstructionRepository;
+import com.bar.gestiondesfichier.document.service.DocumentUploadService;
+import com.bar.gestiondesfichier.entity.Account;
+import com.bar.gestiondesfichier.repository.AccountRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,8 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
@@ -31,9 +40,18 @@ import java.util.Optional;
 public class PermiConstructionController {
 
     private final PermiConstructionRepository permiConstructionRepository;
+    private final DocumentUploadService documentUploadService;
+    private final DocumentRepository documentRepository;
+    private final AccountRepository accountRepository;
 
-    public PermiConstructionController(PermiConstructionRepository permiConstructionRepository) {
+    public PermiConstructionController(PermiConstructionRepository permiConstructionRepository,
+                                       DocumentUploadService documentUploadService,
+                                       DocumentRepository documentRepository,
+                                       AccountRepository accountRepository) {
         this.permiConstructionRepository = permiConstructionRepository;
+        this.documentUploadService = documentUploadService;
+        this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
     }
 
     @GetMapping
@@ -112,13 +130,16 @@ public class PermiConstructionController {
         }
     }
 
-    @PostMapping
-    @Operation(summary = "Create construction permit", description = "Create a new construction permit record")
+    @PostMapping(consumes = {"multipart/form-data"})
+    @Transactional
+    @Operation(summary = "Create construction permit", description = "Create a new construction permit record with file upload")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Construction permit created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        @ApiResponse(responseCode = "400", description = "Invalid request data or missing file")
     })
-    public ResponseEntity<Map<String, Object>> createPermiConstruction(@RequestBody PermiConstruction permiConstruction) {
+    public ResponseEntity<Map<String, Object>> createPermiConstruction(
+            @RequestPart("permiConstruction") PermiConstruction permiConstruction,
+            @RequestPart("file") MultipartFile file) {
         try {
             log.info("Creating new construction permit: {}", permiConstruction.getNumeroPermis());
 
@@ -131,10 +152,6 @@ public class PermiConstructionController {
                 return ResponseUtil.badRequest("DoneBy (Account) is required");
             }
 
-            if (permiConstruction.getDocument() == null) {
-                return ResponseUtil.badRequest("Document is required");
-            }
-
             if (permiConstruction.getStatus() == null) {
                 return ResponseUtil.badRequest("Status is required");
             }
@@ -144,7 +161,73 @@ public class PermiConstructionController {
                 return ResponseUtil.badRequest("Construction permit with this number already exists");
             }
 
+            // Get the current user (owner) for the document
+            Account owner = permiConstruction.getDoneBy();
+
+            // Verify the account exists
+            Optional<Account> accountOpt = accountRepository.findById(owner.getId());
+            if (accountOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Account not found with ID: " + owner.getId());
+            }
+            Account actualOwner = accountOpt.get();
+
+            // Prepare variables for document metadata
+            String contentType;
+            String fileExtension;
+            String uniqueFileName;
+            String originalFileName;
+            String filePath;
+            long fileSize;
+
+            // Validate that file is provided (mandatory)
+            if (file == null || file.isEmpty()) {
+                log.warn("File upload is required but not provided for construction permit: {}",
+                        permiConstruction.getNumeroPermis());
+                return ResponseUtil.badRequest("Document file is required. Please upload a file to create the construction permit.");
+            }
+
+            // Handle file upload
+            log.info("File upload detected: {}", file.getOriginalFilename());
+
+            // Upload file and get file path
+            try {
+                filePath = documentUploadService.uploadFile(file, "permi_construction");
+
+                // Extract information from uploaded file
+                contentType = file.getContentType();
+                fileSize = file.getSize();
+                fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
+
+                // Extract unique filename from path
+                uniqueFileName = Paths.get(filePath).getFileName().toString();
+
+                // Generate original filename
+                originalFileName = documentUploadService.generateOriginalFileName(
+                        "Permi_Construction",
+                        permiConstruction.getNumeroPermis(),
+                        fileExtension
+                );
+
+                log.info("File uploaded successfully: {}", filePath);
+            } catch (IOException e) {
+                log.error("Failed to upload file", e);
+                return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
+            }
+
+            // Initialize the document using DocumentUploadService
+            Document document = documentUploadService.initializeDocument(
+                    uniqueFileName, originalFileName, contentType, fileSize, filePath, actualOwner);
+
+            // Save the document first
+            Document savedDocument = documentRepository.save(document);
+            log.info("Created document with ID: {} and version: {} for construction permit: {}",
+                    savedDocument.getId(), savedDocument.getVersion(), permiConstruction.getNumeroPermis());
+
+            // Link the saved document to the construction permit
+            permiConstruction.setDocument(savedDocument);
             permiConstruction.setActive(true);
+
+            // Save the construction permit
             PermiConstruction savedPermiConstruction = permiConstructionRepository.save(permiConstruction);
 
             return ResponseUtil.success(savedPermiConstruction, "Construction permit created successfully");

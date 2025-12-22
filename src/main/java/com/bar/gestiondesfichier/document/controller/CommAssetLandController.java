@@ -3,8 +3,15 @@ package com.bar.gestiondesfichier.document.controller;
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
 import com.bar.gestiondesfichier.document.model.CommAssetLand;
+import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.CommAssetLandProjection;
 import com.bar.gestiondesfichier.document.repository.CommAssetLandRepository;
+import com.bar.gestiondesfichier.document.repository.DocumentRepository;
+import com.bar.gestiondesfichier.document.service.DocumentUploadService;
+import com.bar.gestiondesfichier.entity.Account;
+
+import com.bar.gestiondesfichier.repository.AccountRepository;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,13 +21,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * REST controller for Commercial Asset Land management with 20-record default pagination
+ * REST controller for Commercial Asset Land management with 20-record default
+ * pagination
  */
 @RestController
 @RequestMapping("/api/document/comm-asset-land")
@@ -30,9 +42,19 @@ import java.util.Optional;
 public class CommAssetLandController {
 
     private final CommAssetLandRepository commAssetLandRepository;
+    private final DocumentUploadService documentUploadService;
+    private final DocumentRepository documentRepository;
+    private final AccountRepository accountRepository;
 
-    public CommAssetLandController(CommAssetLandRepository commAssetLandRepository) {
+    public CommAssetLandController(
+            CommAssetLandRepository commAssetLandRepository,
+            DocumentUploadService documentUploadService,
+            DocumentRepository documentRepository,
+            AccountRepository accountRepository) {
         this.commAssetLandRepository = commAssetLandRepository;
+        this.documentUploadService = documentUploadService;
+        this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
     }
 
     @GetMapping
@@ -52,12 +74,12 @@ public class CommAssetLandController {
             @Parameter(description = "Filter by section category ID") @RequestParam(required = false) Long sectionCategoryId,
             @Parameter(description = "Search term") @RequestParam(required = false) String search) {
         try {
-            log.info("Retrieving commercial asset land records - page: {}, size: {}, sort: {} {}, statusId: {}, documentId: {}, sectionCategoryId: {}, search: '{}'", 
+            log.info("Retrieving commercial asset land records - page: {}, size: {}, sort: {} {}, statusId: {}, documentId: {}, sectionCategoryId: {}, search: '{}'",
                     page, size, sort, direction, statusId, documentId, sectionCategoryId, search);
-            
+
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<CommAssetLandProjection> commAssetLands;
-            
+
             // Priority: search > statusId > sectionCategoryId > documentId > all
             if (search != null && !search.trim().isEmpty()) {
                 log.debug("Filtering commercial asset lands by search term: '{}'", search);
@@ -75,7 +97,7 @@ public class CommAssetLandController {
                 log.debug("Retrieving all active commercial asset lands");
                 commAssetLands = commAssetLandRepository.findAllActiveProjections(pageable);
             }
-            
+
             log.info("Successfully retrieved {} commercial asset land records", commAssetLands.getTotalElements());
             return ResponseEntity.ok(commAssetLands);
         } catch (IllegalArgumentException e) {
@@ -98,10 +120,10 @@ public class CommAssetLandController {
             if (id == null || id <= 0) {
                 return ResponseUtil.badRequest("Invalid commercial asset land ID");
             }
-            
+
             log.info("Retrieving commercial asset land by ID: {}", id);
             Optional<CommAssetLand> commAssetLand = commAssetLandRepository.findByIdAndActiveTrue(id);
-            
+
             if (commAssetLand.isPresent()) {
                 return ResponseUtil.success(commAssetLand.get(), "Commercial asset land retrieved successfully");
             } else {
@@ -113,36 +135,80 @@ public class CommAssetLandController {
         }
     }
 
-    @PostMapping
+    @PostMapping(consumes = {"multipart/form-data"})
+    @Transactional
     @Operation(summary = "Create commercial asset land", description = "Create a new commercial asset land record")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Commercial asset land created successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
-    public ResponseEntity<Map<String, Object>> createCommAssetLand(@RequestBody CommAssetLand commAssetLand) {
+    public ResponseEntity<Map<String, Object>> createCommAssetLand(
+            @RequestPart("commAssetLand") CommAssetLand commAssetLand,
+            @RequestPart("file") MultipartFile file) {
         try {
             log.info("Creating new commercial asset land: {}", commAssetLand.getReference());
-            
+
             // Validate required fields
             if (commAssetLand.getReference() == null || commAssetLand.getReference().trim().isEmpty()) {
                 return ResponseUtil.badRequest("Reference is required");
             }
-            
+
             if (commAssetLand.getDoneBy() == null) {
                 return ResponseUtil.badRequest("DoneBy (Account) is required");
             }
-            
-            if (commAssetLand.getDocument() == null) {
-                return ResponseUtil.badRequest("Document is required");
-            }
-            
+
             if (commAssetLand.getStatus() == null) {
                 return ResponseUtil.badRequest("Status is required");
             }
-            
+
+            // Verify account exists
+            Account actualOwner = accountRepository.findById(commAssetLand.getDoneBy().getId())
+                    .orElseThrow(() -> new RuntimeException("Account not found with ID: " + commAssetLand.getDoneBy().getId()));
+
+            // Validate file is provided (mandatory)
+            if (file == null || file.isEmpty()) {
+                log.warn("Validation failed: Document file is required");
+                return ResponseUtil.badRequest("Document file is required. Please upload a file to create the commercial asset land record.");
+            }
+
+            // Upload file to comm_asset_land folder
+            String filePath;
+            try {
+                filePath = documentUploadService.uploadFile(file, "comm_asset_land");
+                log.info("File uploaded successfully to: {}", filePath);
+            } catch (IOException e) {
+                log.error("Failed to upload file", e);
+                return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
+            }
+
+            // Extract file metadata
+            String contentType = file.getContentType();
+            Long fileSize = file.getSize();
+            String fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
+            String uniqueFileName = Paths.get(filePath).getFileName().toString();
+            String originalFileName = documentUploadService.generateOriginalFileName(
+                    "Comm_Asset_Land",
+                    commAssetLand.getReference(),
+                    fileExtension
+            );
+
+            // Initialize and save document
+            Document document = documentUploadService.initializeDocument(
+                    uniqueFileName,
+                    originalFileName,
+                    contentType,
+                    fileSize,
+                    filePath,
+                    actualOwner
+            );
+            Document savedDocument = documentRepository.save(document);
+            log.info("Document saved with ID: {}", savedDocument.getId());
+
+            // Link document to commercial asset land and save
+            commAssetLand.setDocument(savedDocument);
             commAssetLand.setActive(true);
             CommAssetLand savedCommAssetLand = commAssetLandRepository.save(commAssetLand);
-            
+
             return ResponseUtil.success(savedCommAssetLand, "Commercial asset land created successfully");
         } catch (Exception e) {
             log.error("Error creating commercial asset land", e);
@@ -159,14 +225,14 @@ public class CommAssetLandController {
     public ResponseEntity<Map<String, Object>> updateCommAssetLand(@PathVariable Long id, @RequestBody CommAssetLand commAssetLand) {
         try {
             log.info("Updating commercial asset land with ID: {}", id);
-            
+
             Optional<CommAssetLand> existingCommAssetLandOpt = commAssetLandRepository.findByIdAndActiveTrue(id);
             if (existingCommAssetLandOpt.isEmpty()) {
                 return ResponseUtil.badRequest("Commercial asset land not found with ID: " + id);
             }
-            
+
             CommAssetLand existingCommAssetLand = existingCommAssetLandOpt.get();
-            
+
             // Update fields
             if (commAssetLand.getReference() != null) {
                 existingCommAssetLand.setReference(commAssetLand.getReference());
@@ -189,7 +255,7 @@ public class CommAssetLandController {
             if (commAssetLand.getStatus() != null) {
                 existingCommAssetLand.setStatus(commAssetLand.getStatus());
             }
-            
+
             CommAssetLand savedCommAssetLand = commAssetLandRepository.save(existingCommAssetLand);
             return ResponseUtil.success(savedCommAssetLand, "Commercial asset land updated successfully");
         } catch (Exception e) {
@@ -207,16 +273,16 @@ public class CommAssetLandController {
     public ResponseEntity<Map<String, Object>> deleteCommAssetLand(@PathVariable Long id) {
         try {
             log.info("Deleting commercial asset land with ID: {}", id);
-            
+
             Optional<CommAssetLand> commAssetLandOpt = commAssetLandRepository.findByIdAndActiveTrue(id);
             if (commAssetLandOpt.isEmpty()) {
                 return ResponseUtil.badRequest("Commercial asset land not found with ID: " + id);
             }
-            
+
             CommAssetLand commAssetLand = commAssetLandOpt.get();
             commAssetLand.setActive(false);
             commAssetLandRepository.save(commAssetLand);
-            
+
             return ResponseUtil.success(null, "Commercial asset land deleted successfully");
         } catch (Exception e) {
             log.error("Error deleting commercial asset land with ID: {}", id, e);
@@ -236,11 +302,11 @@ public class CommAssetLandController {
             @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "20") Integer size) {
         try {
             log.info("Retrieving commercial asset lands by section category ID: {}", sectionCategoryId);
-            
+
             Pageable pageable = ResponseUtil.createPageable(page, size, "reference", "asc");
-            Page<CommAssetLandProjection> commAssetLands = 
-                commAssetLandRepository.findByActiveTrueAndSectionCategoryIdProjections(sectionCategoryId, pageable);
-            
+            Page<CommAssetLandProjection> commAssetLands
+                    = commAssetLandRepository.findByActiveTrueAndSectionCategoryIdProjections(sectionCategoryId, pageable);
+
             return ResponseEntity.ok(commAssetLands);
         } catch (Exception e) {
             log.error("Error retrieving commercial asset lands by section category: {}", sectionCategoryId, e);
