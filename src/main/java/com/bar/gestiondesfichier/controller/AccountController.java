@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -141,7 +143,7 @@ public class AccountController {
         @ApiResponse(responseCode = "400", description = "Invalid request data"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<AccountDTO> updateAccount(@PathVariable Long id, @RequestBody AccountRequest accountRequest) {
+    public ResponseEntity<AccountDTO> updateAccount(@PathVariable Long id, @RequestBody AccountUpdateRequest  accountRequest) {
         try {
             Optional<Account> existingAccount = accountRepository.findById(id);
             if (!existingAccount.isPresent() || !existingAccount.get().isActive()) {
@@ -198,7 +200,10 @@ public class AccountController {
     }
 
     // Simple DTO for response
+    @Setter
+    @Getter
     public static class AccountDTO {
+        // Getters and Setters
         private Long id;
         private String username;
         private String email;
@@ -220,34 +225,28 @@ public class AccountController {
             this.active = active;
         }
 
-        // Getters and Setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
+    }
 
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
 
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
+    @Setter
+    @Getter
+    public static class AccountUpdateRequest {
 
-        public String getFullName() { return fullName; }
-        public void setFullName(String fullName) { this.fullName = fullName; }
+        private String username;
+        private String password; // optional
+        private String email;
+        private String fullName;
+        private String phoneNumber;
+        private String gender;
+        private Long categoryId;
 
-        public String getPhoneNumber() { return phoneNumber; }
-        public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-
-        public String getGender() { return gender; }
-        public void setGender(String gender) { this.gender = gender; }
-
-        public String getCategoryName() { return categoryName; }
-        public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
-
-        public boolean isActive() { return active; }
-        public void setActive(boolean active) { this.active = active; }
     }
 
     // Simple DTO for request
+    @Setter
+    @Getter
     public static class AccountRequest {
+        // Getters and Setters
         private String username;
         private String password;
         private String email;
@@ -256,27 +255,6 @@ public class AccountController {
         private String gender;
         private Long categoryId;
 
-        // Getters and Setters
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
-
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getFullName() { return fullName; }
-        public void setFullName(String fullName) { this.fullName = fullName; }
-
-        public String getPhoneNumber() { return phoneNumber; }
-        public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-
-        public String getGender() { return gender; }
-        public void setGender(String gender) { this.gender = gender; }
-
-        public Long getCategoryId() { return categoryId; }
-        public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     }
 
     // Conversion method
