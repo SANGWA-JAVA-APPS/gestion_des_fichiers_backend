@@ -1,6 +1,8 @@
 package com.bar.gestiondesfichier.location.controller;
 
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.location.dto.ModuleRequestDTO;
+import com.bar.gestiondesfichier.location.dto.ModuleResponseDTO;
 import com.bar.gestiondesfichier.location.model.Module;
 import com.bar.gestiondesfichier.location.model.LocationEntity;
 import com.bar.gestiondesfichier.location.repository.ModuleRepository;
@@ -17,7 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -52,9 +54,11 @@ public class ModuleController {
             log.info("Retrieving modules - page: {}, size: {}, sort: {} {}", page, size, sort, direction);
             
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
-            Page<Module> modules = moduleRepository.findByActiveTrue(pageable);
+            Page<ModuleResponseDTO> response =
+                    moduleRepository.findByActiveTrue(pageable)
+                            .map(this::toResponseDTO);
             
-            return ResponseUtil.successWithPagination(modules);
+            return ResponseUtil.successWithPagination(response);
         } catch (IllegalArgumentException e) {
             log.warn("Invalid parameters for module retrieval: {}", e.getMessage());
             return ResponseUtil.badRequest(e.getMessage());
@@ -117,37 +121,64 @@ public class ModuleController {
     @PostMapping
     @Operation(summary = "Create module", description = "Create a new module")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Module created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "403", description = "Session expired")
+            @ApiResponse(responseCode = "200", description = "Module created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "403", description = "Session expired")
     })
-    public ResponseEntity<Map<String, Object>> createModule(@RequestBody ModuleRequest moduleRequest) {
+    public ResponseEntity<Map<String, Object>> createModule(@RequestBody ModuleRequestDTO dto) {
         try {
-            log.info("Creating module: {}", moduleRequest.getName());
-            
-            // Validate input
-            if (moduleRequest.getName() == null || moduleRequest.getName().trim().isEmpty()) {
+            log.info("Creating module: {}", dto.getName());
+
+            // 1️⃣ Validate input
+            if (dto.getName() == null || dto.getName().trim().isEmpty()) {
                 return ResponseUtil.badRequest("Module name is required");
             }
-            
-            if (moduleRequest.getEntityId() == null || moduleRequest.getEntityId() <= 0) {
+
+            if (dto.getLocationEntityId() == null || dto.getLocationEntityId() <= 0) {
                 return ResponseUtil.badRequest("Valid location entity ID is required");
             }
-            
-            // Find the location entity
-            Optional<LocationEntity> locationEntity = locationEntityRepository.findByIdAndActiveTrue(moduleRequest.getEntityId());
-            if (!locationEntity.isPresent()) {
-                return ResponseUtil.badRequest("Location entity not found with ID: " + moduleRequest.getEntityId());
+
+            // 2️⃣ Fetch LocationEntity
+            Optional<LocationEntity> locationEntityOpt =
+                    locationEntityRepository.findByIdAndActiveTrue(dto.getLocationEntityId());
+
+            if (locationEntityOpt.isEmpty()) {
+                return ResponseUtil.badRequest(
+                        "Location entity not found with ID: " + dto.getLocationEntityId()
+                );
             }
 
+            LocationEntity locationEntity = locationEntityOpt.get();
+
+            // 3️⃣ Map DTO → Entity using setters
             Module module = new Module();
-            module.setName(moduleRequest.getName().trim());
-            module.setDescription(moduleRequest.getDescription() != null ? moduleRequest.getDescription().trim() : null);
-            module.setLocationEntity(locationEntity.get());
+            module.setName(dto.getName().trim());
+            module.setDescription(dto.getDescription());
+            module.setModuleCode(dto.getModuleCode());
+            module.setCoordinates(dto.getCoordinates());
+            module.setAreaSize(dto.getAreaSize());
+            module.setAreaUnit(dto.getAreaUnit());
+            module.setLocationEntity(locationEntity);
             module.setActive(true);
 
+            // Enum-safe conversion
+            if (dto.getModuleType() != null && !dto.getModuleType().isBlank()) {
+                try {
+                    module.setModuleType(
+                            Module.ModuleType.valueOf(dto.getModuleType().toUpperCase())
+                    );
+                } catch (IllegalArgumentException ex) {
+                    return ResponseUtil.badRequest(
+                            "Invalid moduleType: " + dto.getModuleType()
+                    );
+                }
+            }
+
+            // 4️⃣ Save
             Module savedModule = moduleRepository.save(module);
+
             return ResponseUtil.success(savedModule, "Module created successfully");
+
         } catch (Exception e) {
             log.error("Error creating module", e);
             return ResponseUtil.badRequest("Failed to create module: " + e.getMessage());
@@ -156,38 +187,60 @@ public class ModuleController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update module", description = "Update an existing module")
-    public ResponseEntity<Map<String, Object>> updateModule(@PathVariable Long id, @RequestBody ModuleRequest moduleRequest) {
+    public ResponseEntity<Map<String, Object>> updateModule(
+            @PathVariable Long id,
+            @RequestBody ModuleRequestDTO dto
+    ) {
         try {
             if (id == null || id <= 0) {
                 return ResponseUtil.badRequest("Invalid module ID");
             }
-            
-            if (moduleRequest.getName() == null || moduleRequest.getName().trim().isEmpty()) {
+
+            if (dto.getName() == null || dto.getName().trim().isEmpty()) {
                 return ResponseUtil.badRequest("Module name is required");
             }
-            
-            log.info("Updating module with ID: {}", id);
-            
-            Optional<Module> existingModule = moduleRepository.findByIdAndActiveTrue(id);
-            if (!existingModule.isPresent()) {
+
+            Optional<Module> existingModuleOpt = moduleRepository.findByIdAndActiveTrue(id);
+            if (existingModuleOpt.isEmpty()) {
                 return ResponseUtil.badRequest("Module not found with ID: " + id);
             }
 
-            Module module = existingModule.get();
-            module.setName(moduleRequest.getName().trim());
-            module.setDescription(moduleRequest.getDescription() != null ? moduleRequest.getDescription().trim() : null);
+            Module module = existingModuleOpt.get();
 
-            if (moduleRequest.getEntityId() != null && moduleRequest.getEntityId() > 0) {
-                Optional<LocationEntity> locationEntity = locationEntityRepository.findByIdAndActiveTrue(moduleRequest.getEntityId());
-                if (locationEntity.isPresent()) {
-                    module.setLocationEntity(locationEntity.get());
-                } else {
-                    return ResponseUtil.badRequest("Location entity not found with ID: " + moduleRequest.getEntityId());
+            // Update fields
+            module.setName(dto.getName().trim());
+            module.setDescription(dto.getDescription());
+            module.setModuleCode(dto.getModuleCode());
+            module.setCoordinates(dto.getCoordinates());
+            module.setAreaSize(dto.getAreaSize());
+            module.setAreaUnit(dto.getAreaUnit());
+
+            // LocationEntity
+            if (dto.getLocationEntityId() != null && dto.getLocationEntityId() > 0) {
+                Optional<LocationEntity> locationEntityOpt =
+                        locationEntityRepository.findByIdAndActiveTrue(dto.getLocationEntityId());
+                if (locationEntityOpt.isEmpty()) {
+                    return ResponseUtil.badRequest(
+                            "Location entity not found with ID: " + dto.getLocationEntityId()
+                    );
+                }
+                module.setLocationEntity(locationEntityOpt.get());
+            }
+
+            // Module type enum
+            if (dto.getModuleType() != null && !dto.getModuleType().isBlank()) {
+                try {
+                    module.setModuleType(
+                            Module.ModuleType.valueOf(dto.getModuleType().toUpperCase())
+                    );
+                } catch (IllegalArgumentException ex) {
+                    return ResponseUtil.badRequest("Invalid moduleType: " + dto.getModuleType());
                 }
             }
 
             Module savedModule = moduleRepository.save(module);
             return ResponseUtil.success(savedModule, "Module updated successfully");
+
         } catch (Exception e) {
             log.error("Error updating module with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update module: " + e.getMessage());
@@ -236,4 +289,27 @@ public class ModuleController {
         public Long getEntityId() { return entityId; }
         public void setEntityId(Long entityId) { this.entityId = entityId; }
     }
+
+
+
+
+    private ModuleResponseDTO toResponseDTO(Module module) {
+        LocationEntity entity = module.getLocationEntity();
+
+        return new ModuleResponseDTO(
+                module.getId(),
+                module.getName(),
+                module.getDescription(),
+                module.getModuleCode(),
+                module.getModuleType() != null ? module.getModuleType().name() : null,
+                module.getCoordinates(),
+                module.getAreaSize(),
+                module.getAreaUnit(),
+                entity.getId(),
+                entity.getName()
+        );
+    }
+
 }
+
+

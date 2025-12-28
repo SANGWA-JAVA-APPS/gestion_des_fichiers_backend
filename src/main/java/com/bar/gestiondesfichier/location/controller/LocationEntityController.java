@@ -1,6 +1,8 @@
 package com.bar.gestiondesfichier.location.controller;
 
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.location.dto.LocationEntityDTO;
+import com.bar.gestiondesfichier.location.dto.LocationEntityRequest;
 import com.bar.gestiondesfichier.location.model.LocationEntity;
 import com.bar.gestiondesfichier.location.model.Country;
 import com.bar.gestiondesfichier.location.repository.LocationEntityRepository;
@@ -39,9 +41,9 @@ public class LocationEntityController {
     @GetMapping
     @Operation(summary = "Get all location entities", description = "Retrieve paginated list of active location entities with default 20 records per page")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Location entities retrieved successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
-        @ApiResponse(responseCode = "403", description = "Session expired")
+            @ApiResponse(responseCode = "200", description = "Location entities retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
+            @ApiResponse(responseCode = "403", description = "Session expired")
     })
     public ResponseEntity<Map<String, Object>> getAllLocationEntities(
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") Integer page,
@@ -53,7 +55,13 @@ public class LocationEntityController {
 
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<LocationEntity> entities = locationEntityRepository.findByActiveTrue(pageable);
-            return ResponseUtil.successWithPagination(entities);
+
+            // Map entities to DTOs
+            Page<LocationEntityDTO> dtoPage = entities.map(this::convertToDTO);
+
+            log.info("**********************The list of entities returned***********: {}", dtoPage.getContent());
+
+            return ResponseUtil.successWithPagination(dtoPage);
         } catch (IllegalArgumentException e) {
             log.warn("Invalid parameters for location entity retrieval: {}", e.getMessage());
             return ResponseUtil.badRequest(e.getMessage());
@@ -113,80 +121,55 @@ public class LocationEntityController {
         }
     }
 
+
     @PostMapping
-    @Operation(summary = "Create location entity", description = "Create a new location entity")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Location entity created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "403", description = "Session expired")
-    })
-    public ResponseEntity<Map<String, Object>> createLocationEntity(@RequestBody LocationEntityRequest entityRequest) {
-        try {
-            log.info("Creating location entity: {}", entityRequest.getName());
-
-            // Validate input
-            if (entityRequest.getName() == null || entityRequest.getName().trim().isEmpty()) {
-                return ResponseUtil.badRequest("Location entity name is required");
-            }
-
-            if (entityRequest.getCountryId() == null || entityRequest.getCountryId() <= 0) {
-                return ResponseUtil.badRequest("Valid country ID is required");
-            }
-
-            // Find the country
-            Optional<Country> country = countryRepository.findByIdAndActiveTrue(entityRequest.getCountryId());
-            if (!country.isPresent()) {
-                return ResponseUtil.badRequest("Country not found with ID: " + entityRequest.getCountryId());
-            }
-
-            LocationEntity entity = new LocationEntity();
-            entity.setName(entityRequest.getName().trim());
-            entity.setDescription(entityRequest.getDescription() != null ? entityRequest.getDescription().trim() : null);
-            entity.setCountry(country.get());
-            entity.setActive(true);
-
-            LocationEntity savedEntity = locationEntityRepository.save(entity);
-            return ResponseUtil.success(savedEntity, "Location entity created successfully");
-        } catch (Exception e) {
-            log.error("Error creating location entity", e);
-            return ResponseUtil.badRequest("Failed to create location entity: " + e.getMessage());
+    @Operation(summary = "Create location entity")
+    public ResponseEntity<Map<String, Object>> createLocationEntity(@RequestBody LocationEntityRequest request) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            return ResponseUtil.badRequest("Location entity name is required");
         }
-    }
+        if (request.getCountryId() == null || request.getCountryId() <= 0) {
+            return ResponseUtil.badRequest("Valid country ID is required");
+        }
 
+        Optional<Country> country = countryRepository.findByIdAndActiveTrue(request.getCountryId());
+        if (!country.isPresent()) {
+            return ResponseUtil.badRequest("Country not found with ID: " + request.getCountryId());
+        }
+
+        LocationEntity entity = new LocationEntity();
+        entity.setName(request.getName().trim());
+        entity.setDescription(request.getDescription());
+        entity.setCode(request.getCode());
+        entity.setPostalCode(request.getPostalCode());
+        entity.setEntityType(request.getEntityType() != null ? LocationEntity.EntityType.valueOf(request.getEntityType()) : null);
+        entity.setCountry(country.get());
+        entity.setActive(true);
+
+        return ResponseUtil.success(convertToDTO(locationEntityRepository.save(entity)), "Location entity created successfully");
+    }
     @PutMapping("/{id}")
-    @Operation(summary = "Update location entity", description = "Update an existing location entity")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Location entity updated successfully"),
-        @ApiResponse(responseCode = "404", description = "Location entity not found"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<LocationEntityDTO> updateLocationEntity(@PathVariable Long id, @RequestBody LocationEntityRequest entityRequest) {
-        try {
-            Optional<LocationEntity> existingEntity = locationEntityRepository.findByIdAndActiveTrue(id);
-            if (!existingEntity.isPresent()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            LocationEntity entity = existingEntity.get();
-            entity.setName(entityRequest.getName());
-            entity.setDescription(entityRequest.getDescription());
-
-            if (entityRequest.getCountryId() != null) {
-                Optional<Country> country = countryRepository.findByIdAndActiveTrue(entityRequest.getCountryId());
-                if (country.isPresent()) {
-                    entity.setCountry(country.get());
-                }
-            }
-
-            LocationEntity savedEntity = locationEntityRepository.save(entity);
-            return ResponseEntity.ok(convertToDTO(savedEntity));
-        } catch (Exception e) {
-            log.error("Error updating location entity with id: " + id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    public ResponseEntity<LocationEntityDTO> updateLocationEntity(@PathVariable Long id, @RequestBody LocationEntityRequest request) {
+        Optional<LocationEntity> existingEntity = locationEntityRepository.findByIdAndActiveTrue(id);
+        if (!existingEntity.isPresent()) {
+            return ResponseEntity.notFound().build();
         }
-    }
 
+        LocationEntity entity = existingEntity.get();
+        entity.setName(request.getName());
+        entity.setDescription(request.getDescription());
+        entity.setCode(request.getCode());
+        entity.setPostalCode(request.getPostalCode());
+        entity.setEntityType(request.getEntityType() != null ? LocationEntity.EntityType.valueOf(request.getEntityType()) : null);
+
+        if (request.getCountryId() != null) {
+            Optional<Country> country = countryRepository.findByIdAndActiveTrue(request.getCountryId());
+            country.ifPresent(entity::setCountry);
+        }
+
+        LocationEntity savedEntity = locationEntityRepository.save(entity);
+        return ResponseEntity.ok(convertToDTO(savedEntity));
+    }
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete location entity", description = "Soft delete a location entity")
     @ApiResponses(value = {
@@ -211,84 +194,22 @@ public class LocationEntityController {
         }
     }
 
-    // Simple DTO for simplified frontend requirements
-    public static class LocationEntityRequest {
 
-        private String name;
-        private String description;
-        private Long countryId;
 
-        // Getters and Setters
-        public String getName() {
-            return name;
-        }
 
-        public void setName(String name) {
-            this.name = name;
-        }
 
-        public String getDescription() {
-            return description;
-        }
-
-        public void setDescription(String description) {
-            this.description = description;
-        }
-
-        public Long getCountryId() {
-            return countryId;
-        }
-
-        public void setCountryId(Long countryId) {
-            this.countryId = countryId;
-        }
-    }
-
-    // Simple DTO for response
-    public static class LocationEntityDTO {
-
-        private Long id;
-        private String name;
-        private Long countryId;
-
-        public LocationEntityDTO(Long id, String name, Long countryId) {
-            this.id = id;
-            this.name = name;
-            this.countryId = countryId;
-        }
-
-        // Getters and Setters
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public Long getCountryId() {
-            return countryId;
-        }
-
-        public void setCountryId(Long countryId) {
-            this.countryId = countryId;
-        }
-    }
-
-    // Conversion method
     private LocationEntityDTO convertToDTO(LocationEntity entity) {
         return new LocationEntityDTO(
                 entity.getId(),
                 entity.getName(),
-                entity.getCountry() != null ? entity.getCountry().getId() : null
+                entity.getDescription(),
+                entity.getCode(),
+                entity.getPostalCode(),
+                entity.getEntityType() != null ? entity.getEntityType().name() : null,
+                entity.getCountry() != null ? entity.getCountry().getId() : null,
+                entity.getCountry() != null ? entity.getCountry().getName() : null,
+                entity.getCountry() != null ? entity.getCountry().getIsoCode() : null
         );
     }
+
 }

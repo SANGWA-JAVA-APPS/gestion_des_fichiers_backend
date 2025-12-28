@@ -30,7 +30,7 @@ public class LocationEntity extends NamedEntity {
     @Column(name = "postal_code", length = 20)
     private String postalCode;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "country_id", nullable = false)
     @JsonBackReference("country-entities")
     private Country country;

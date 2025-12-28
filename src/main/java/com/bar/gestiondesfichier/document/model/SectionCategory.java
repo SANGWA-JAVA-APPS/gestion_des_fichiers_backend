@@ -15,24 +15,19 @@ import lombok.Setter;
 @Table(name = "section_category")
 @Getter
 @Setter
-public class SectionCategory extends NamedEntity {
 
-    @Column(name = "description", length = 500)
-    private String description;
+public class SectionCategory extends NamedEntity {
 
     // Default constructor
     public SectionCategory() {
         super();
     }
 
-    // Constructor with name
     public SectionCategory(String name) {
         super(name);
     }
 
-    // Constructor with name and description
     public SectionCategory(String name, String description) {
-        super(name);
-        this.description = description;
+        super(name, description);
     }
 }
