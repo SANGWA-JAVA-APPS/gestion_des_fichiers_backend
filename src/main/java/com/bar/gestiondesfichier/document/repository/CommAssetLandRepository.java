@@ -11,143 +11,113 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Repository for CommAssetLand with pagination and projection support
- */
 @Repository
 public interface CommAssetLandRepository extends JpaRepository<CommAssetLand, Long> {
 
-    Page<CommAssetLand> findByActiveTrue(Pageable pageable);
+    /* ===================== BASE QUERY ===================== */
+    String BASE_QUERY = """
+            SELECT
+                c.id                                  AS id,
+                c.date_time                           AS dateTime,
+                c.description                         AS description,
+                c.reference                           AS reference,
+                c.date_obtention                      AS dateObtention,
+                c.coordonnees_gps                     AS coordonneesGps,
+                c.emplacement                         AS emplacement,
 
-    Page<CommAssetLand> findByActiveTrueAndStatus_Id(Long statusId, Pageable pageable);
+                d.id                                  AS documentId,
+                d.file_name                            AS documentFileName,
+                d.original_file_name                   AS documentOriginalFileName,
+                d.file_path                            AS documentFilePath,
+                d.content_type                         AS documentContentType,
+                d.file_size                            AS documentFileSize,
+                d.created_at                            AS documentCreatedAt,
+                d.updated_at                            AS documentUpdatedAt,
+                d.active                                AS documentActive,
+                d.status                                AS documentStatus,
+                d.version                               AS documentVersion,
+                d.expiration_date                       AS documentExpirationDate,
+                d.expiry_date                           AS documentExpiryDate,
+                d.expiry_alert_sent                      AS documentExpiryAlertSent,
 
-    Page<CommAssetLand> findByActiveTrueAndSection_Id(Long sectionId, Pageable pageable);
+                owner.id                                AS documentOwnerId,
+                owner.full_name                         AS documentOwnerFullName,
+                owner.username                           AS documentOwnerUsername,
+                owner.email                              AS documentOwnerEmail,
 
-    @Query("SELECT c FROM CommAssetLand c WHERE c.active = true AND "
-            + "(LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')) OR "
-            + "LOWER(c.reference) LIKE LOWER(CONCAT('%', :search, '%')) OR "
-            + "LOWER(c.emplacement) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<CommAssetLand> findByActiveTrueAndDescriptionOrReferenceContaining(@Param("search") String search, Pageable pageable);
+                s.id                                    AS statusId,
+                s.name                                  AS statusName,
 
-    // Direct projection methods for optimized performance
-    @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
-            + "c.reference as reference, c.dateObtention as dateObtention, "
-            + "c.coordonneesGps as coordonneesGps, c.emplacement as emplacement, "
-            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
-            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
-            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
-            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
-            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "c.status.id as status_id, c.status.name as status_name, "
-            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username, "
-            + "c.section.id as section_id, c.section.name as section_name "
-            + "FROM CommAssetLand c "
-            + "JOIN c.document d "
-            + "JOIN d.owner "
-            + "WHERE c.active = true AND "
-            + "(LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')) OR "
-            + "LOWER(c.reference) LIKE LOWER(CONCAT('%', :search, '%')) OR "
-            + "LOWER(c.emplacement) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<CommAssetLandProjection> findByActiveTrueAndSearchTermsProjections(@Param("search") String search, Pageable pageable);
+                doneBy.id                               AS doneById,
+                doneBy.full_name                         AS doneByFullName,
+                doneBy.username                          AS doneByUsername,
 
-    @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
-            + "c.reference as reference, c.dateObtention as dateObtention, "
-            + "c.coordonneesGps as coordonneesGps, c.emplacement as emplacement, "
-            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
-            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
-            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
-            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
-            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "c.status.id as status_id, c.status.name as status_name, "
-            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username, "
-            + "c.section.id as section_id, c.section.name as section_name "
-            + "FROM CommAssetLand c "
-            + "JOIN c.document d "
-            + "JOIN d.owner "
-            + "WHERE c.active = true AND c.status.id = :statusId")
-    Page<CommAssetLandProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
+                sec.id                                   AS sectionId,
+                sec.name                                 AS sectionName
+            FROM comm_asset_land c
+            JOIN files d              ON d.id = c.doc_id
+            JOIN accounts owner       ON owner.id = d.owner_id
+            JOIN docstatus s          ON s.id = c.statut_id
+            JOIN accounts doneBy      ON doneBy.id = c.doneby
+            JOIN section_category sec ON sec.id = c.section_id
+            WHERE c.active = 1
+            """;
 
-    @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
-            + "c.reference as reference, c.dateObtention as dateObtention, "
-            + "c.coordonneesGps as coordonneesGps, c.emplacement as emplacement, "
-            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
-            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
-            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
-            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
-            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "c.status.id as status_id, c.status.name as status_name, "
-            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username, "
-            + "c.section.id as section_id, c.section.name as section_name "
-            + "FROM CommAssetLand c "
-            + "JOIN c.document d "
-            + "JOIN d.owner "
-            + "WHERE c.active = true AND c.document.id = :documentId")
-    Page<CommAssetLandProjection> findByActiveTrueAndDocumentIdProjections(@Param("documentId") Long documentId, Pageable pageable);
+    /* ===================== LIST ALL ACTIVE ===================== */
+    @Query(
+            value = BASE_QUERY,
+            countQuery = "SELECT COUNT(*) FROM comm_asset_land c WHERE c.active = 1",
+            nativeQuery = true
+    )
+    Page<CommAssetLandProjection> findAllActive(Pageable pageable);
 
-    @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
-            + "c.reference as reference, c.dateObtention as dateObtention, "
-            + "c.coordonneesGps as coordonneesGps, c.emplacement as emplacement, "
-            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
-            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
-            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
-            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
-            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "c.status.id as status_id, c.status.name as status_name, "
-            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username, "
-            + "c.section.id as section_id, c.section.name as section_name "
-            + "FROM CommAssetLand c "
-            + "JOIN c.document d "
-            + "JOIN d.owner "
-            + "WHERE c.active = true AND c.section.id = :sectionCategoryId")
-    Page<CommAssetLandProjection> findByActiveTrueAndSectionCategoryIdProjections(@Param("sectionCategoryId") Long sectionCategoryId, Pageable pageable);
+    /* ===================== SEARCH ===================== */
+    @Query(
+            value = BASE_QUERY + """
+              AND (
+                  LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(c.reference) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(c.emplacement) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+        """,
+            countQuery = """
+            SELECT COUNT(*) FROM comm_asset_land c
+            WHERE c.active = 1
+              AND (
+                  LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(c.reference) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(c.emplacement) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+        """,
+            nativeQuery = true
+    )
+    Page<CommAssetLandProjection> search(@Param("search") String search, Pageable pageable);
 
-    @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
-            + "c.reference as reference, c.dateObtention as dateObtention, "
-            + "c.coordonneesGps as coordonneesGps, c.emplacement as emplacement, "
-            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
-            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
-            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
-            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
-            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "c.status.id as status_id, c.status.name as status_name, "
-            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username, "
-            + "c.section.id as section_id, c.section.name as section_name "
-            + "FROM CommAssetLand c "
-            + "JOIN c.document d "
-            + "JOIN d.owner "
-            + "WHERE c.active = true")
-    Page<CommAssetLandProjection> findAllActiveProjections(Pageable pageable);
+    /* ===================== BY STATUS ===================== */
+    @Query(
+            value = BASE_QUERY + " AND c.statut_id = :statusId",
+            countQuery = "SELECT COUNT(*) FROM comm_asset_land c WHERE c.active = 1 AND c.statut_id = :statusId",
+            nativeQuery = true
+    )
+    Page<CommAssetLandProjection> findByStatus(@Param("statusId") Long statusId, Pageable pageable);
 
-    // Method for the by-section endpoint
-    @Query("SELECT c.id as id, c.dateTime as dateTime, c.description as description, "
-            + "c.reference as reference, c.dateObtention as dateObtention, "
-            + "c.coordonneesGps as coordonneesGps, c.emplacement as emplacement, "
-            + "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, "
-            + "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, "
-            + "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, "
-            + "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, "
-            + "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, "
-            + "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, "
-            + "d.owner.username as document_owner_username, d.owner.email as document_owner_email, "
-            + "c.status.id as status_id, c.status.name as status_name, "
-            + "c.doneBy.id as doneBy_id, c.doneBy.fullName as doneBy_fullName, c.doneBy.username as doneBy_username, "
-            + "c.section.id as section_id, c.section.name as section_name "
-            + "  FROM CommAssetLand c "
-            + "  JOIN c.document d "
-            + "  JOIN d.owner "
-            + "  WHERE c.active = true AND c.section.id = :sectionCategoryId")
-    Page<CommAssetLandProjection> findAllBySectionCategoryProjections(@Param("sectionCategoryId") Long sectionCategoryId, Pageable pageable);
+    /* ===================== BY DOCUMENT ===================== */
+    @Query(
+            value = BASE_QUERY + " AND c.doc_id = :documentId",
+            countQuery = "SELECT COUNT(*) FROM comm_asset_land c WHERE c.active = 1 AND c.doc_id = :documentId",
+            nativeQuery = true
+    )
+    Page<CommAssetLandProjection> findByDocument(@Param("documentId") Long documentId, Pageable pageable);
 
+    /* ===================== BY SECTION ===================== */
+    @Query(
+            value = BASE_QUERY + " AND c.section_id = :sectionId",
+            countQuery = "SELECT COUNT(*) FROM comm_asset_land c WHERE c.active = 1 AND c.section_id = :sectionId",
+            nativeQuery = true
+    )
+    Page<CommAssetLandProjection> findBySection(@Param("sectionId") Long sectionId, Pageable pageable);
+
+    /* ===================== ENTITY METHODS ===================== */
     Optional<CommAssetLand> findByIdAndActiveTrue(Long id);
 
     Optional<CommAssetLand> findByReferenceAndActiveTrue(String reference);

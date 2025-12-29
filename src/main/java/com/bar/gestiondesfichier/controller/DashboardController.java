@@ -81,7 +81,6 @@ public class DashboardController {
             // For now, return basic data
             response.put("success", true);
             response.put("message", "User distribution retrieved");
-            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("success", false);

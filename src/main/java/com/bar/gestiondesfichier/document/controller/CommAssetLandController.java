@@ -60,9 +60,9 @@ public class CommAssetLandController {
     @GetMapping
     @Operation(summary = "Get all commercial asset land records", description = "Retrieve paginated list of commercial asset land with default 20 records per page")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Commercial asset land records retrieved successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
-        @ApiResponse(responseCode = "403", description = "Session expired")
+            @ApiResponse(responseCode = "200", description = "Commercial asset land records retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
+            @ApiResponse(responseCode = "403", description = "Session expired")
     })
     public ResponseEntity<Page<CommAssetLandProjection>> getAllCommAssetLand(
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") Integer page,
@@ -83,19 +83,19 @@ public class CommAssetLandController {
             // Priority: search > statusId > sectionCategoryId > documentId > all
             if (search != null && !search.trim().isEmpty()) {
                 log.debug("Filtering commercial asset lands by search term: '{}'", search);
-                commAssetLands = commAssetLandRepository.findByActiveTrueAndSearchTermsProjections(search.trim(), pageable);
+                commAssetLands = commAssetLandRepository.search(search.trim(), pageable);
             } else if (statusId != null) {
                 log.debug("Filtering commercial asset lands by status ID: {}", statusId);
-                commAssetLands = commAssetLandRepository.findByActiveTrueAndStatusIdProjections(statusId, pageable);
+                commAssetLands = commAssetLandRepository.findByStatus(statusId, pageable);
             } else if (sectionCategoryId != null) {
                 log.debug("Filtering commercial asset lands by section category ID: {}", sectionCategoryId);
-                commAssetLands = commAssetLandRepository.findByActiveTrueAndSectionCategoryIdProjections(sectionCategoryId, pageable);
+                commAssetLands = commAssetLandRepository.findBySection(sectionCategoryId, pageable);
             } else if (documentId != null) {
                 log.debug("Filtering commercial asset lands by document ID: {}", documentId);
-                commAssetLands = commAssetLandRepository.findByActiveTrueAndDocumentIdProjections(documentId, pageable);
+                commAssetLands = commAssetLandRepository.findByDocument(documentId, pageable);
             } else {
                 log.debug("Retrieving all active commercial asset lands");
-                commAssetLands = commAssetLandRepository.findAllActiveProjections(pageable);
+                commAssetLands = commAssetLandRepository.findAllActive(pageable);
             }
 
             log.info("Successfully retrieved {} commercial asset land records", commAssetLands.getTotalElements());
@@ -293,8 +293,8 @@ public class CommAssetLandController {
     @GetMapping("/by-section/{sectionCategoryId}")
     @Operation(summary = "Get commercial asset lands by section category", description = "Retrieve commercial asset lands filtered by section category")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Commercial asset lands retrieved successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid section category ID")
+            @ApiResponse(responseCode = "200", description = "Commercial asset lands retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid section category ID")
     })
     public ResponseEntity<Page<CommAssetLandProjection>> getCommAssetLandsBySectionCategory(
             @PathVariable Long sectionCategoryId,
@@ -305,7 +305,7 @@ public class CommAssetLandController {
 
             Pageable pageable = ResponseUtil.createPageable(page, size, "reference", "asc");
             Page<CommAssetLandProjection> commAssetLands
-                    = commAssetLandRepository.findByActiveTrueAndSectionCategoryIdProjections(sectionCategoryId, pageable);
+                    = commAssetLandRepository.findBySection(sectionCategoryId, pageable);
 
             return ResponseEntity.ok(commAssetLands);
         } catch (Exception e) {

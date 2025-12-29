@@ -3,7 +3,7 @@ package com.bar.gestiondesfichier.document.projection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public interface CommAssetLandProjection {
+public interface CommAssetLandView {
 
     Long getId();
     LocalDateTime getDateTime();
@@ -23,7 +23,7 @@ public interface CommAssetLandProjection {
     LocalDateTime getDocumentUpdatedAt();
     Boolean getDocumentActive();
     String getDocumentStatus();
-    Double  getDocumentVersion();
+    Integer getDocumentVersion();
     LocalDate getDocumentExpirationDate();
     LocalDate getDocumentExpiryDate();
     Boolean getDocumentExpiryAlertSent();
@@ -43,3 +43,4 @@ public interface CommAssetLandProjection {
     Long getSectionId();
     String getSectionName();
 }
+
