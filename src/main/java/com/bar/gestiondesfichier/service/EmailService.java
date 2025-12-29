@@ -17,7 +17,7 @@ import jakarta.mail.internet.MimeMessage;
  * Supports both simple text and HTML email messages
  */
 @Service
-@RequiredArgsConstructor
+
 @Slf4j
 public class EmailService {
 
@@ -28,6 +28,10 @@ public class EmailService {
 
     @Value("${app.email.admin:m.fall@aglgroup.com}")
     private String adminEmail;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
     /**
      * Send a simple text email

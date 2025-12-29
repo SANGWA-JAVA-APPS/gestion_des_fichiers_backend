@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,11 +27,15 @@ import java.util.Optional;
 @RequestMapping("/api/document/comm-third-party")
 @DocumentControllerCors
 @Tag(name = "Commercial Third Party Management", description = "Commercial Third Party CRUD operations with pagination")
-@RequiredArgsConstructor
+
 @Slf4j
 public class CommThirdPartyController {
 
     private final CommThirdPartyRepository commThirdPartyRepository;
+
+    public CommThirdPartyController(CommThirdPartyRepository commThirdPartyRepository) {
+        this.commThirdPartyRepository = commThirdPartyRepository;
+    }
 
     @GetMapping
     @Operation(summary = "Get all commercial third parties", description = "Retrieve paginated list of commercial third parties with default 20 records per page")

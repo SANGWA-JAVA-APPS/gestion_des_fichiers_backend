@@ -15,7 +15,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,13 +37,20 @@ import java.util.Optional;
 @DocumentControllerCors
 @Tag(name = "Estate Management", description = "Estate CRUD operations with pagination")
 @Slf4j
-@RequiredArgsConstructor
+
 public class EstateController {
 
     private final EstateRepository estateRepository;
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
+
+    public EstateController(EstateRepository estateRepository, DocumentUploadService documentUploadService, DocumentRepository documentRepository, AccountRepository accountRepository) {
+        this.estateRepository = estateRepository;
+        this.documentUploadService = documentUploadService;
+        this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
+    }
 
     @GetMapping
     @Operation(summary = "Get all estates", description = "Retrieve paginated list of estates with default 20 records per page")

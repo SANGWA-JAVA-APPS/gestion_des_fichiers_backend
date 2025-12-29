@@ -28,10 +28,14 @@ import java.util.Optional;
 @DocumentControllerCors
 @Tag(name = "Insurance Management", description = "Insurance CRUD operations with pagination")
 @Slf4j
-@RequiredArgsConstructor
+
 public class InsuranceController {
 
     private final InsuranceRepository insuranceRepository;
+
+    public InsuranceController(InsuranceRepository insuranceRepository) {
+        this.insuranceRepository = insuranceRepository;
+    }
 
     @GetMapping
     @Operation(summary = "Get all insurance records", description = "Retrieve paginated list of insurance records with default 20 records per page")

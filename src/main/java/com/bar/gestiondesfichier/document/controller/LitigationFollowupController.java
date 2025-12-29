@@ -29,10 +29,14 @@ import java.util.Optional;
 @DocumentControllerCors
 @Tag(name = "Litigation Followup Management", description = "Litigation Followup CRUD operations with pagination")
 @Slf4j
-@RequiredArgsConstructor
+
 public class LitigationFollowupController {
 
     private final LitigationFollowupRepository litigationFollowupRepository;
+
+    public LitigationFollowupController(LitigationFollowupRepository litigationFollowupRepository) {
+        this.litigationFollowupRepository = litigationFollowupRepository;
+    }
 
     @GetMapping
     @Operation(summary = "Get all litigation followup records", description = "Retrieve paginated list of litigation followup records with default 20 records per page")

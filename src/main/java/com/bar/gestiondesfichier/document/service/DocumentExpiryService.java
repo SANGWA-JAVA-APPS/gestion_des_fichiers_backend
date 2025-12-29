@@ -19,12 +19,17 @@ import java.util.List;
  * checks for expiring and expired documents
  */
 @Service
-@RequiredArgsConstructor
+
 @Slf4j
 public class DocumentExpiryService {
 
     private final DocumentRepository documentRepository;
     private final EmailService emailService;
+
+    public DocumentExpiryService(DocumentRepository documentRepository, EmailService emailService) {
+        this.documentRepository = documentRepository;
+        this.emailService = emailService;
+    }
 
     /**
      * Check for documents expiring within 2 weeks and send alerts to admin Runs

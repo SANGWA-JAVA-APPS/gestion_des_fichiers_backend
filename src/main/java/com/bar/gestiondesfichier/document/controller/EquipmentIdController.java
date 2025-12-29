@@ -27,11 +27,15 @@ import java.util.Optional;
 @RequestMapping("/api/document/equipment-id")
 @DocumentControllerCors
 @Tag(name = "Equipment ID Management", description = "Equipment ID CRUD operations with pagination")
-@RequiredArgsConstructor
+
 @Slf4j
 public class EquipmentIdController {
 
     private final EquipmentIdRepository equipmentIdRepository;
+
+    public EquipmentIdController(EquipmentIdRepository equipmentIdRepository) {
+        this.equipmentIdRepository = equipmentIdRepository;
+    }
 
     @GetMapping
     @Operation(summary = "Get all equipment IDs", description = "Retrieve paginated list of equipment IDs with default 20 records per page")
