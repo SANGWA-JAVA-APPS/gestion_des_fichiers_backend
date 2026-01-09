@@ -2,6 +2,7 @@ package com.bar.gestiondesfichier.document.controller;
 
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.config.CurrentUser;
 import com.bar.gestiondesfichier.document.model.CommAssetLand;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.CommAssetLandProjection;
@@ -45,16 +46,18 @@ public class CommAssetLandController {
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
+    private final CurrentUser  currentUser;
 
     public CommAssetLandController(
             CommAssetLandRepository commAssetLandRepository,
             DocumentUploadService documentUploadService,
             DocumentRepository documentRepository,
-            AccountRepository accountRepository) {
+            AccountRepository accountRepository, CurrentUser currentUser) {
         this.commAssetLandRepository = commAssetLandRepository;
         this.documentUploadService = documentUploadService;
         this.documentRepository = documentRepository;
         this.accountRepository = accountRepository;
+        this.currentUser = currentUser;
     }
 
     @GetMapping
@@ -73,6 +76,7 @@ public class CommAssetLandController {
             @Parameter(description = "Filter by document ID") @RequestParam(required = false) Long documentId,
             @Parameter(description = "Filter by section category ID") @RequestParam(required = false) Long sectionCategoryId,
             @Parameter(description = "Search term") @RequestParam(required = false) String search) {
+        Long ownerId = currentUser.isUser() ? currentUser.getAccountId() : null;
         try {
             log.info("Retrieving commercial asset land records - page: {}, size: {}, sort: {} {}, statusId: {}, documentId: {}, sectionCategoryId: {}, search: '{}'",
                     page, size, sort, direction, statusId, documentId, sectionCategoryId, search);
@@ -95,7 +99,7 @@ public class CommAssetLandController {
                 commAssetLands = commAssetLandRepository.findByDocument(documentId, pageable);
             } else {
                 log.debug("Retrieving all active commercial asset lands");
-                commAssetLands = commAssetLandRepository.findAllActive(pageable);
+                commAssetLands = commAssetLandRepository.findAllActive(ownerId, pageable);
             }
 
             log.info("Successfully retrieved {} commercial asset land records", commAssetLands.getTotalElements());
@@ -124,11 +128,7 @@ public class CommAssetLandController {
             log.info("Retrieving commercial asset land by ID: {}", id);
             Optional<CommAssetLand> commAssetLand = commAssetLandRepository.findByIdAndActiveTrue(id);
 
-            if (commAssetLand.isPresent()) {
-                return ResponseUtil.success(commAssetLand.get(), "Commercial asset land retrieved successfully");
-            } else {
-                return ResponseUtil.badRequest("Commercial asset land not found with ID: " + id);
-            }
+            return commAssetLand.map(assetLand -> ResponseUtil.success(assetLand, "Commercial asset land retrieved successfully")).orElseGet(() -> ResponseUtil.badRequest("Commercial asset land not found with ID: " + id));
         } catch (Exception e) {
             log.error("Error retrieving commercial asset land with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to retrieve commercial asset land: " + e.getMessage());

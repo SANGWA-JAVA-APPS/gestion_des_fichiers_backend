@@ -2,6 +2,7 @@ package com.bar.gestiondesfichier.document.controller;
 
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.config.CurrentUser;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.model.Estate;
 import com.bar.gestiondesfichier.document.projection.EstateProjection;
@@ -44,12 +45,13 @@ public class EstateController {
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
-
-    public EstateController(EstateRepository estateRepository, DocumentUploadService documentUploadService, DocumentRepository documentRepository, AccountRepository accountRepository) {
+private final CurrentUser currentUser;
+    public EstateController(EstateRepository estateRepository, DocumentUploadService documentUploadService, DocumentRepository documentRepository, AccountRepository accountRepository, CurrentUser currentUser) {
         this.estateRepository = estateRepository;
         this.documentUploadService = documentUploadService;
         this.documentRepository = documentRepository;
         this.accountRepository = accountRepository;
+        this.currentUser = currentUser;
     }
 
     @GetMapping
@@ -73,6 +75,7 @@ public class EstateController {
             
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<EstateProjection> estates;
+            Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
             
             if (search != null && !search.trim().isEmpty()) {
                 estates = estateRepository.findByActiveTrueAndReferenceOrEstateTypeContainingProjections(search, pageable);
@@ -81,7 +84,7 @@ public class EstateController {
             } else if (documentId != null) {
                 estates = estateRepository.findByActiveTrueAndDocumentIdProjections(documentId, pageable);
             } else {
-                estates = estateRepository.findAllActiveProjections(pageable);
+                estates = estateRepository.findAllActiveProjections(ownerId,pageable);
             }
             
             return ResponseEntity.ok(estates);

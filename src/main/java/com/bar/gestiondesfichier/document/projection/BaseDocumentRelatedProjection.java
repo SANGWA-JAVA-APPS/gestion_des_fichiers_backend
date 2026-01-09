@@ -12,7 +12,6 @@ public interface BaseDocumentRelatedProjection {
     
     // Document information
     DocumentInfo getDocument();
-    
     // Status information
     StatusInfo getStatus();
     

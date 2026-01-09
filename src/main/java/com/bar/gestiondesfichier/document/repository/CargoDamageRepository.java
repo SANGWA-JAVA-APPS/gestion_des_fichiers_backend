@@ -29,13 +29,29 @@ public interface CargoDamageRepository extends JpaRepository<CargoDamage, Long> 
     Page<CargoDamage> findByActiveTrueAndClaimNumberOrDamageDescriptionContaining(@Param("search") String search, Pageable pageable);
     
     // Direct projection methods for improved performance using JOIN FETCH
-    @Query("SELECT c FROM CargoDamage c " +
-           "LEFT JOIN FETCH c.document d " +
-           "LEFT JOIN FETCH d.owner " +
-           "LEFT JOIN FETCH c.status " +
-           "LEFT JOIN FETCH c.doneBy " +
-           "WHERE c.active = true")
-    Page<CargoDamageProjection> findAllActiveProjections(Pageable pageable);
+    @Query(
+            value = """
+        SELECT c FROM CargoDamage c
+        LEFT JOIN FETCH c.document d
+        LEFT JOIN FETCH d.owner o
+        LEFT JOIN FETCH c.status
+        LEFT JOIN FETCH c.doneBy
+        WHERE c.active = true
+        AND (:ownerId IS NULL OR o.id = :ownerId)
+    """,
+            countQuery = """
+        SELECT COUNT(c) FROM CargoDamage c
+        LEFT JOIN c.document d
+        LEFT JOIN d.owner o
+        WHERE c.active = true
+        AND (:ownerId IS NULL OR o.id = :ownerId)
+    """
+    )
+    Page<CargoDamageProjection> findAllActiveProjections(
+            @Param("ownerId") Long ownerId,
+            Pageable pageable
+    );
+
     
     @Query("SELECT c.id as id, c.dateTime as dateTime, c.refeRequest as refeRequest, " +
            "c.description as description, c.quotationContractNum as quotationContractNum, " +

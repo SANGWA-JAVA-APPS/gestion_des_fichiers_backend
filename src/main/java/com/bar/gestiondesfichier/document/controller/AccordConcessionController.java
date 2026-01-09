@@ -2,6 +2,7 @@ package com.bar.gestiondesfichier.document.controller;
 
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.config.CurrentUser;
 import com.bar.gestiondesfichier.document.model.AccordConcession;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.AccordConcessionProjection;
@@ -45,16 +46,18 @@ public class AccordConcessionController {
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
     private final DocumentUploadService documentUploadService;
+private final CurrentUser  currentUser;
 
     public AccordConcessionController(
             AccordConcessionRepository accordConcessionRepository,
             DocumentRepository documentRepository,
             AccountRepository accountRepository,
-            DocumentUploadService documentUploadService) {
+            DocumentUploadService documentUploadService, CurrentUser currentUser) {
         this.accordConcessionRepository = accordConcessionRepository;
         this.documentRepository = documentRepository;
         this.accountRepository = accountRepository;
         this.documentUploadService = documentUploadService;
+        this.currentUser = currentUser;
     }
 
     @GetMapping
@@ -75,7 +78,7 @@ public class AccordConcessionController {
         try {
             log.info("Retrieving concession agreements - page: {}, size: {}, sort: {} {}, statusId: {}, search: {}",
                     page, size, sort, direction, statusId, search);
-
+Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<AccordConcession> accordConcessions;
 
@@ -88,7 +91,7 @@ public class AccordConcessionController {
             } else if (documentId != null) {
                 accordConcessions = accordConcessionRepository.findByActiveTrueAndDocumentIdWithDetails(documentId, pageable);
             } else {
-                accordConcessions = accordConcessionRepository.findAllActiveWithDetails(pageable);
+                accordConcessions = accordConcessionRepository.findAllActiveWithDetails(ownerId,pageable);
             }
 
             return ResponseEntity.ok(accordConcessions);
@@ -216,6 +219,22 @@ public class AccordConcessionController {
             accordConcession.setDocument(savedDocument);
             accordConcession.setActive(true);
 
+            // Normalize strings
+            accordConcession.setContratConcession(trim(accordConcession.getContratConcession()));
+            accordConcession.setNumeroAccord(trim(accordConcession.getNumeroAccord()));
+            accordConcession.setObjetConcession(trim(accordConcession.getObjetConcession()));
+            accordConcession.setConcessionnaire(trim(accordConcession.getConcessionnaire()));
+            accordConcession.setConditionsFinancieres(trim(accordConcession.getConditionsFinancieres()));
+            accordConcession.setEmplacement(trim(accordConcession.getEmplacement()));
+            accordConcession.setCoordonneesGps(trim(accordConcession.getCoordonneesGps()));
+            accordConcession.setRapportTransfertGestion(trim(accordConcession.getRapportTransfertGestion()));
+
+// Numbers & dates (no transformation, just touch)
+            accordConcession.setDureeAnnees(accordConcession.getDureeAnnees());
+            accordConcession.setDateDebutConcession(accordConcession.getDateDebutConcession());
+            accordConcession.setDateFinConcession(accordConcession.getDateFinConcession());
+
+
             // Save the accord concession
             AccordConcession savedAccordConcession = accordConcessionRepository.save(accordConcession);
 
@@ -227,52 +246,85 @@ public class AccordConcessionController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     @Operation(summary = "Update concession agreement", description = "Update an existing concession agreement record")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Concession agreement updated successfully"),
-        @ApiResponse(responseCode = "400", description = "Concession agreement not found or invalid data")
+            @ApiResponse(responseCode = "200", description = "Concession agreement updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Concession agreement not found or invalid data")
     })
-    public ResponseEntity<Map<String, Object>> updateAccordConcession(@PathVariable Long id, @RequestBody AccordConcession accordConcession) {
+    public ResponseEntity<Map<String, Object>> updateAccordConcession(
+            @PathVariable Long id,
+            @RequestBody AccordConcession accordConcession) {
+
         try {
             log.info("Updating concession agreement with ID: {}", id);
 
-            Optional<AccordConcession> existingAccordConcessionOpt = accordConcessionRepository.findByIdAndActiveTrue(id);
-            if (existingAccordConcessionOpt.isEmpty()) {
-                return ResponseUtil.badRequest("Concession agreement not found with ID: " + id);
+            AccordConcession existing = accordConcessionRepository
+                    .findByIdAndActiveTrue(id)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Concession agreement not found with ID: " + id));
+
+            // ---------- STRING FIELDS (normalized) ----------
+            if (accordConcession.getContratConcession() != null) {
+                existing.setContratConcession(trim(accordConcession.getContratConcession()));
             }
-
-            AccordConcession existingAccordConcession = existingAccordConcessionOpt.get();
-
-            // Update fields
             if (accordConcession.getNumeroAccord() != null) {
-                existingAccordConcession.setNumeroAccord(accordConcession.getNumeroAccord());
+                existing.setNumeroAccord(trim(accordConcession.getNumeroAccord()));
             }
             if (accordConcession.getObjetConcession() != null) {
-                existingAccordConcession.setObjetConcession(accordConcession.getObjetConcession());
+                existing.setObjetConcession(trim(accordConcession.getObjetConcession()));
             }
             if (accordConcession.getConcessionnaire() != null) {
-                existingAccordConcession.setConcessionnaire(accordConcession.getConcessionnaire());
-            }
-            if (accordConcession.getDureeAnnees() != null) {
-                existingAccordConcession.setDureeAnnees(accordConcession.getDureeAnnees());
+                existing.setConcessionnaire(trim(accordConcession.getConcessionnaire()));
             }
             if (accordConcession.getConditionsFinancieres() != null) {
-                existingAccordConcession.setConditionsFinancieres(accordConcession.getConditionsFinancieres());
+                existing.setConditionsFinancieres(trim(accordConcession.getConditionsFinancieres()));
             }
-            if (accordConcession.getSectionCategory() != null) {
-                existingAccordConcession.setSectionCategory(accordConcession.getSectionCategory());
+            if (accordConcession.getEmplacement() != null) {
+                existing.setEmplacement(trim(accordConcession.getEmplacement()));
             }
-            if (accordConcession.getStatus() != null) {
-                existingAccordConcession.setStatus(accordConcession.getStatus());
+            if (accordConcession.getCoordonneesGps() != null) {
+                existing.setCoordonneesGps(trim(accordConcession.getCoordonneesGps()));
+            }
+            if (accordConcession.getRapportTransfertGestion() != null) {
+                existing.setRapportTransfertGestion(trim(accordConcession.getRapportTransfertGestion()));
             }
 
-            AccordConcession savedAccordConcession = accordConcessionRepository.save(existingAccordConcession);
-            return ResponseUtil.success(savedAccordConcession, "Concession agreement updated successfully");
+            // ---------- NUMBERS ----------
+            if (accordConcession.getDureeAnnees() != null) {
+                existing.setDureeAnnees(accordConcession.getDureeAnnees());
+            }
+
+            // ---------- DATES ----------
+            if (accordConcession.getDateDebutConcession() != null) {
+                existing.setDateDebutConcession(accordConcession.getDateDebutConcession());
+            }
+            if (accordConcession.getDateFinConcession() != null) {
+                existing.setDateFinConcession(accordConcession.getDateFinConcession());
+            }
+
+            // ---------- RELATIONS ----------
+            if (accordConcession.getSectionCategory() != null &&
+                    accordConcession.getSectionCategory().getId() != null) {
+
+                existing.setSectionCategory(
+                        accordConcession.getSectionCategory()
+                );
+            }
+
+            if (accordConcession.getStatus() != null) {
+                existing.setStatus(accordConcession.getStatus());
+            }
+
+            AccordConcession saved = accordConcessionRepository.save(existing);
+            return ResponseUtil.success(saved, "Concession agreement updated successfully");
+
         } catch (Exception e) {
             log.error("Error updating concession agreement with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update concession agreement: " + e.getMessage());
         }
     }
+
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete concession agreement", description = "Soft delete a concession agreement record")
@@ -299,4 +351,8 @@ public class AccordConcessionController {
             return ResponseUtil.badRequest("Failed to delete concession agreement: " + e.getMessage());
         }
     }
+    private String trim(String v) {
+        return v == null ? null : v.trim();
+    }
+
 }

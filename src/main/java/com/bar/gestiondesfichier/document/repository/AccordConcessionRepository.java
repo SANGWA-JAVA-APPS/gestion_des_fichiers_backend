@@ -169,14 +169,32 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
     boolean existsByContratConcessionAndActiveTrue(String contratConcession);
 
     // Entity-based queries with JOIN FETCH for eager loading
-    @Query("SELECT a FROM AccordConcession a "
-            + "JOIN FETCH a.document d "
-            + "JOIN FETCH d.owner "
-            + "JOIN FETCH a.status "
-            + "JOIN FETCH a.doneBy "
-            + "LEFT JOIN FETCH a.sectionCategory "
-            + "WHERE a.active = true")
-    Page<AccordConcession> findAllActiveWithDetails(Pageable pageable);
+    @Query(
+            value = """
+        SELECT a
+        FROM AccordConcession a
+        JOIN a.document d
+        JOIN d.owner o
+        JOIN a.status
+        JOIN a.doneBy
+        LEFT JOIN a.sectionCategory
+        WHERE a.active = true
+          AND (:ownerId IS NULL OR o.id = :ownerId)
+    """,
+            countQuery = """
+        SELECT COUNT(a)
+        FROM AccordConcession a
+        JOIN a.document d
+        JOIN d.owner o
+        WHERE a.active = true
+          AND (:ownerId IS NULL OR o.id = :ownerId)
+    """
+    )
+    Page<AccordConcession> findAllActiveWithDetails(
+            @Param("ownerId") Long ownerId,
+            Pageable pageable
+    );
+
 
     @Query("SELECT a FROM AccordConcession a "
             + "JOIN FETCH a.document d "

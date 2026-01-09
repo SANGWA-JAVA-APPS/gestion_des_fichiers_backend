@@ -2,6 +2,7 @@ package com.bar.gestiondesfichier.document.controller;
 
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.config.CurrentUser;
 import com.bar.gestiondesfichier.document.model.CargoDamage;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.CargoDamageProjection;
@@ -44,16 +45,18 @@ public class CargoDamageController {
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
-
+    private final CurrentUser  currentUser;
     public CargoDamageController(CargoDamageRepository cargoDamageRepository,
                                  DocumentUploadService documentUploadService,
                                  DocumentRepository documentRepository,
-                                 AccountRepository accountRepository) {
+                                 AccountRepository accountRepository, CurrentUser currentUser) {
         this.cargoDamageRepository = cargoDamageRepository;
         this.documentUploadService = documentUploadService;
         this.documentRepository = documentRepository;
         this.accountRepository = accountRepository;
+        this.currentUser = currentUser;
     }
+
 
     @GetMapping
     @Operation(summary = "Get all cargo damage records", description = "Retrieve paginated list of cargo damage records with default 20 records per page")
@@ -71,6 +74,7 @@ public class CargoDamageController {
             @Parameter(description = "Filter by document ID") @RequestParam(required = false) Long documentId,
             @Parameter(description = "Search term") @RequestParam(required = false) String search) {
         try {
+            Long ownerId = currentUser.isUser() ? currentUser.getAccountId() : null;
             log.info("Retrieving cargo damage records - page: {}, size: {}, sort: {} {}, statusId: {}, documentId: {}, search: '{}'",
                     page, size, sort, direction, statusId, documentId, search);
 
@@ -87,7 +91,7 @@ public class CargoDamageController {
                 projections = cargoDamageRepository.findByActiveTrueAndDocumentIdProjections(documentId, pageable);
                 log.debug("Found {} cargo damage records with documentId: {}", projections.getTotalElements(), documentId);
             } else {
-                projections = cargoDamageRepository.findAllActiveProjections(pageable);
+                projections = cargoDamageRepository.findAllActiveProjections(ownerId,pageable);
                 log.debug("Found {} active cargo damage records", projections.getTotalElements());
             }
 

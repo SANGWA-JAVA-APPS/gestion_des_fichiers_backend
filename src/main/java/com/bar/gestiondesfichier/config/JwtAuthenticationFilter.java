@@ -1,5 +1,7 @@
 package com.bar.gestiondesfichier.config;
 
+import com.bar.gestiondesfichier.entity.Account;
+import com.bar.gestiondesfichier.repository.AccountRepository;
 import com.bar.gestiondesfichier.service.CustomUserDetailsService;
 import com.bar.gestiondesfichier.util.JwtUtils;
 import jakarta.servlet.FilterChain;
@@ -30,6 +32,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private CurrentUser currentUser;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
@@ -47,6 +53,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    Account account = accountRepository.findByUsername(username).orElse(null);
+                    if (account != null) {
+                        currentUser.setAccount(account);
+                        log.debug("CurrentUser initialized: {} with role {}", account.getUsername(), account.getAccountCategory().getName());
+                    }
                 }
             }
         } catch (Exception e) {

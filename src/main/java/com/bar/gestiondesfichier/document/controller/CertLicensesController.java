@@ -2,6 +2,7 @@ package com.bar.gestiondesfichier.document.controller;
 
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.config.CurrentUser;
 import com.bar.gestiondesfichier.document.model.CertLicenses;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.CertLicensesProjection;
@@ -43,15 +44,17 @@ public class CertLicensesController {
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
-
+private  final CurrentUser currentUser;
     public CertLicensesController(CertLicensesRepository certLicensesRepository,
                                   DocumentUploadService documentUploadService,
                                   DocumentRepository documentRepository,
-                                  AccountRepository accountRepository) {
+                                  AccountRepository accountRepository, CurrentUser currentUser) {
         this.certLicensesRepository = certLicensesRepository;
         this.documentUploadService = documentUploadService;
         this.documentRepository = documentRepository;
         this.accountRepository = accountRepository;
+
+        this.currentUser = currentUser;
     }
 
     @GetMapping
@@ -72,7 +75,7 @@ public class CertLicensesController {
         try {
             log.info("Retrieving certificates & licenses - page: {}, size: {}, sort: {} {}, statusId: {}, documentId: {}, search: '{}'", 
                     page, size, sort, direction, statusId, documentId, search);
-            
+            Long ownerId = currentUser.isUser() ? currentUser.getAccountId() : null;
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<CertLicensesProjection> projections;
             
@@ -86,7 +89,7 @@ public class CertLicensesController {
                 projections = certLicensesRepository.findByActiveTrueAndDocumentIdProjections(documentId, pageable);
                 log.debug("Found {} certificates & licenses with documentId: {}", projections.getTotalElements(), documentId);
             } else {
-                projections = certLicensesRepository.findAllActiveProjections(pageable);
+                projections = certLicensesRepository.findAllActiveProjections(ownerId,pageable);
                 log.debug("Found {} active certificates & licenses", projections.getTotalElements());
             }
             

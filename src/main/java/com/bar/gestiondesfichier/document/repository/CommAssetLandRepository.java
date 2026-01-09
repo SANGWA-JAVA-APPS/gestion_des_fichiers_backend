@@ -63,13 +63,26 @@ public interface CommAssetLandRepository extends JpaRepository<CommAssetLand, Lo
             WHERE c.active = 1
             """;
 
-    /* ===================== LIST ALL ACTIVE ===================== */
+    /* ===================== LIST ALL ACTIVE (OPTIONALLY BY OWNER) ===================== */
     @Query(
-            value = BASE_QUERY,
-            countQuery = "SELECT COUNT(*) FROM comm_asset_land c WHERE c.active = 1",
+            value = BASE_QUERY + " AND (:ownerId IS NULL OR owner.id = :ownerId)",
+            countQuery = "SELECT COUNT(*) FROM comm_asset_land c " +
+                    "JOIN files d ON d.id = c.doc_id " +
+                    "WHERE c.active = 1 AND (:ownerId IS NULL OR d.owner_id = :ownerId)",
             nativeQuery = true
     )
-    Page<CommAssetLandProjection> findAllActive(Pageable pageable);
+    Page<CommAssetLandProjection> findAllActive(@Param("ownerId") Long ownerId, Pageable pageable);
+
+    /* ===================== BY OWNER ===================== */
+    @Query(
+            value = BASE_QUERY + " AND owner.id = :ownerId",
+            countQuery = "SELECT COUNT(*) FROM comm_asset_land c " +
+                    "JOIN files d ON d.id = c.doc_id " +
+                    "WHERE c.active = 1 AND d.owner_id = :ownerId",
+            nativeQuery = true
+    )
+    Page<CommAssetLandProjection> findByOwner(@Param("ownerId") Long ownerId, Pageable pageable);
+
 
     /* ===================== SEARCH ===================== */
     @Query(

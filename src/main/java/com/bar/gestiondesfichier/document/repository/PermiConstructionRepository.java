@@ -31,27 +31,30 @@ public interface PermiConstructionRepository extends JpaRepository<PermiConstruc
            "LOWER(p.referenceTitreFoncier) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(p.refPermisConstuire) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<PermiConstruction> findByActiveTrueAndReferenceContaining(@Param("search") String search, Pageable pageable);
-    
-    @Query("SELECT p.id as id, p.dateTime as dateTime, p.numeroPermis as numeroPermis, " +
-           "p.projet as projet, p.localisation as localisation, p.dateDelivrance as dateDelivrance, " +
-           "p.dateExpiration as dateExpiration, p.autoriteDelivrance as autoriteDelivrance, " +
-           "p.referenceTitreFoncier as referenceTitreFoncier, p.refPermisConstuire as refPermisConstuire, " +
-           "p.dateValidation as dateValidation, p.dateEstimeeTravaux as dateEstimeeTravaux, " +
-           "d.id as document_id, d.fileName as document_fileName, d.originalFileName as document_originalFileName, " +
-           "d.filePath as document_filePath, d.contentType as document_contentType, d.fileSize as document_fileSize, " +
-           "d.createdAt as document_createdAt, d.updatedAt as document_updatedAt, d.active as document_active, " +
-           "d.status as document_status, d.version as document_version, d.expirationDate as document_expirationDate, " +
-           "d.expiryDate as document_expiryDate, d.expiryAlertSent as document_expiryAlertSent, " +
-           "d.owner.id as document_owner_id, d.owner.fullName as document_owner_fullName, " +
-           "d.owner.username as document_owner_username, d.owner.email as document_owner_email, " +
-           "p.status.id as status_id, p.status.name as status_name, " +
-           "p.doneBy.id as doneBy_id, p.doneBy.fullName as doneBy_fullName, p.doneBy.username as doneBy_username, " +
-           "p.sectionCategory.id as sectionCategory_id, p.sectionCategory.name as sectionCategory_name " +
-           "FROM PermiConstruction p " +
-           "JOIN p.document d " +
-           "JOIN d.owner " +
-           "WHERE p.active = true")
-    Page<PermiConstructionProjection> findAllActiveProjections(Pageable pageable);
+
+    @Query(
+            value = """
+        SELECT p
+        FROM PermiConstruction p
+        JOIN p.document d
+        JOIN d.owner o
+        WHERE p.active = true
+          AND (:ownerId IS NULL OR o.id = :ownerId)
+    """,
+            countQuery = """
+        SELECT COUNT(p)
+        FROM PermiConstruction p
+        JOIN p.document d
+        JOIN d.owner o
+        WHERE p.active = true
+          AND (:ownerId IS NULL OR o.id = :ownerId)
+    """
+    )
+    Page<PermiConstructionProjection> findAllActiveProjections(
+            @Param("ownerId") Long ownerId,
+            Pageable pageable
+    );
+
     
     // Direct projection methods for improved performance
     @Query("SELECT p.id as id, p.dateTime as dateTime, p.numeroPermis as numeroPermis, " +

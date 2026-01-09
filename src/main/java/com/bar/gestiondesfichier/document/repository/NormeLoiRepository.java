@@ -1,5 +1,6 @@
 package com.bar.gestiondesfichier.document.repository;
 
+import com.bar.gestiondesfichier.config.CurrentUser;
 import com.bar.gestiondesfichier.document.model.NormeLoi;
 import com.bar.gestiondesfichier.document.projection.NormeLoiProjection;
 import org.springframework.data.domain.Page;
@@ -88,14 +89,17 @@ public interface NormeLoiRepository extends JpaRepository<NormeLoi, Long> {
             + "WHERE n.active = true AND n.document.id = :documentId")
     Page<NormeLoiProjection> findByActiveTrueAndDocumentIdProjections(@Param("documentId") Long documentId, Pageable pageable);
 
+
     // Projection methods
-    @Query("SELECT n FROM NormeLoi n "
-            + "JOIN FETCH n.document d "
-            + "JOIN FETCH d.owner "
-            + "JOIN FETCH n.status  "
-            + "JOIN FETCH n.doneBy "
-            + "WHERE n.active = true")
-    Page<NormeLoiProjection> findAllActiveProjections(Pageable pageable);
+    @Query("SELECT n FROM NormeLoi n " +
+            "JOIN FETCH n.document d " +
+            "JOIN FETCH d.owner o " +
+            "JOIN FETCH n.status " +
+            "JOIN FETCH n.doneBy " +
+            "WHERE n.active = true " +
+            "AND (:ownerId IS NULL OR o.id = :ownerId)")
+    Page<NormeLoiProjection> findAllActiveProjections(
+            @Param("ownerId") Long ownerId, Pageable pageable);
 
     // Specific queries
     Optional<NormeLoi> findByIdAndActiveTrue(Long id);
@@ -119,4 +123,7 @@ public interface NormeLoiRepository extends JpaRepository<NormeLoi, Long> {
     Optional<NormeLoi> findByReferenceAndActiveTrue(String reference);
 
     boolean existsByReferenceAndActiveTrue(String reference);
+
+
+
 }

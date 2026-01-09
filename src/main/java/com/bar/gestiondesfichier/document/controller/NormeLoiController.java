@@ -2,6 +2,7 @@ package com.bar.gestiondesfichier.document.controller;
 
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.config.CurrentUser;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.model.NormeLoi;
 import com.bar.gestiondesfichier.document.projection.NormeLoiProjection;
@@ -37,7 +38,7 @@ import java.util.Optional;
 @DocumentControllerCors
 @Tag(name = "Norme Loi Management", description = "Legal Norms and Laws CRUD operations with pagination")
 public class NormeLoiController {
-
+    private final CurrentUser currentUser;
     private static final Logger log = LoggerFactory.getLogger(NormeLoiController.class);
 
     private final NormeLoiRepository normeLoiRepository;
@@ -45,8 +46,9 @@ public class NormeLoiController {
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
 
-    public NormeLoiController(NormeLoiRepository normeLoiRepository, DocumentUploadService documentUploadService,
-            DocumentRepository documentRepository, AccountRepository accountRepository) {
+    public NormeLoiController(CurrentUser currentUser, NormeLoiRepository normeLoiRepository, DocumentUploadService documentUploadService,
+                              DocumentRepository documentRepository, AccountRepository accountRepository) {
+        this.currentUser = currentUser;
         this.normeLoiRepository = normeLoiRepository;
         this.documentUploadService = documentUploadService;
         this.documentRepository = documentRepository;
@@ -75,6 +77,11 @@ public class NormeLoiController {
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<NormeLoiProjection> normeLois;
 
+
+            // Check if the current user is a regular user
+            boolean isUserRole = currentUser.isUser();
+            Long userId = currentUser.getAccountId();
+
             // Priority: search > statusId > documentId > all
             if (search != null && !search.trim().isEmpty()) {
                 log.debug("Filtering norme loi by search term: '{}'", search);
@@ -87,8 +94,11 @@ public class NormeLoiController {
                 normeLois = normeLoiRepository.findByActiveTrueAndDocumentIdProjections(documentId, pageable);
             } else {
                 log.debug("Retrieving all active norme loi records");
-                normeLois = normeLoiRepository.findAllActiveProjections(pageable);
+                Long ownerId = currentUser.isUser() ? currentUser.getAccountId() : null;
+             normeLois =
+                        normeLoiRepository.findAllActiveProjections(ownerId, pageable);
             }
+
 
             log.info("Successfully retrieved {} norme loi records", normeLois.getTotalElements());
             return ResponseEntity.ok(normeLois);
