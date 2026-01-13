@@ -20,14 +20,14 @@ import java.util.List;
 })
 public class LocationEntity extends NamedEntity {
 
-    @Column(name = "entity_type", length = 50)
+    @Column(name = "entity_type", length = 100)
     @Enumerated(EnumType.STRING)
     private EntityType entityType;
 
-    @Column(name = "code", unique = true, length = 20)
+    @Column(name = "code", unique = true, length = 100)
     private String code;
 
-    @Column(name = "postal_code", length = 20)
+    @Column(name = "postal_code", length = 100)
     private String postalCode;
 
     @ManyToOne(fetch = FetchType.EAGER)
