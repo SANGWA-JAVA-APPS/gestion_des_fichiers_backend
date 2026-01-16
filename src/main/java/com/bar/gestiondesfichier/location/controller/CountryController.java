@@ -35,23 +35,30 @@ public class CountryController {
     @GetMapping
     @Operation(summary = "Get all countries", description = "Retrieve paginated list of active countries")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Countries retrieved successfully"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
+            @ApiResponse(responseCode = "200", description = "Countries retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<Map<String, Object>> getAllCountries(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "200") Integer size,
             @RequestParam(defaultValue = "name") String sort,
-            @RequestParam(defaultValue = "asc") String direction) {
+            @RequestParam(defaultValue = "asc") String direction,
+            @RequestParam(required = false) String search
+    ) {
         try {
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
-            Page<Country> countries = countryRepository.findByActiveTrue(pageable);
+
+            String searchValue = (search == null) ? "" : search.trim();
+
+            Page<Country> countries = countryRepository.findByActiveTrue(searchValue, pageable);
+
             return ResponseUtil.successWithPagination(countries);
         } catch (Exception e) {
             log.error("Error retrieving countries", e);
             return ResponseUtil.badRequest("Failed to retrieve countries: " + e.getMessage());
         }
     }
+
 
     @GetMapping("/{id}")
     @Operation(summary = "Get country by ID", description = "Retrieve a specific country by ID")

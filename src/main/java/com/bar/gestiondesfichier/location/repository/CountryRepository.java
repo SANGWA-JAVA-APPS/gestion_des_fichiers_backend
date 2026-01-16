@@ -16,7 +16,17 @@ import java.util.Optional;
 public interface CountryRepository extends BaseRepository<Country> {
     
     // Pagination methods
-    Page<Country> findByActiveTrue(Pageable pageable);
+
+    @Query("""
+        SELECT c FROM Country c
+        WHERE c.active = true
+        AND (
+            LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(c.isoCode) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(c.phoneCode) LIKE LOWER(CONCAT('%', :search, '%'))
+        )
+    """)
+    Page<Country> findByActiveTrue(@Param("search") String search, Pageable pageable);
     
     @Query("SELECT c FROM Country c WHERE c.active = true AND LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))")
     Page<Country> findByNameContainingIgnoreCaseAndActiveTrue(@Param("name") String name, Pageable pageable);

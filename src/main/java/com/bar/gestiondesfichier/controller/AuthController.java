@@ -1,8 +1,10 @@
 package com.bar.gestiondesfichier.controller;
 
+import com.bar.gestiondesfichier.dto.AccountDTO;
 import com.bar.gestiondesfichier.dto.LoginRequestDto;
 import com.bar.gestiondesfichier.dto.LoginResponseDto;
 import com.bar.gestiondesfichier.entity.Account;
+import com.bar.gestiondesfichier.mapper.AccountMapper;
 import com.bar.gestiondesfichier.repository.AccountRepository;
 import com.bar.gestiondesfichier.util.JwtUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -81,18 +83,20 @@ public class AuthController {
                     String jwtToken = jwtUtils.generateTokenFromUsername(account.getUsername());
                     String refreshToken = jwtUtils.generateRefreshToken(account.getUsername());
 
-                    LoginResponseDto response = new LoginResponseDto();
-                    response.setSuccess(true);
-                    response.setMessage("Login successful");
-                    response.setUserId(account.getId());
-                    response.setUsername(account.getUsername());
-                    response.setFullName(account.getFullName());
-                    response.setEmail(account.getEmail());
-                    response.setRole(account.getAccountCategory().getName());
-                    response.setToken(jwtToken);
-                    response.setRefreshToken(refreshToken);
+
+
+                    AccountDTO accountDTO = AccountMapper.toDTO(account);
+
+                    LoginResponseDto response = new LoginResponseDto(
+                            true,
+                            "Login successful",
+                            accountDTO,
+                            jwtToken,
+                            refreshToken
+                    );
 
                     return ResponseEntity.ok(response);
+
                 } else {
                     System.out.println("Password does not match or account inactive for user: " + account.getUsername());
                 }

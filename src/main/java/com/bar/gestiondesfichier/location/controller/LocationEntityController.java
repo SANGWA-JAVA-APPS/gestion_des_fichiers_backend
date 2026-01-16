@@ -208,7 +208,7 @@ public class LocationEntityController {
                 entity.getEntityType() != null ? entity.getEntityType().name() : null,
                 entity.getCountry() != null ? entity.getCountry().getId() : null,
                 entity.getCountry() != null ? entity.getCountry().getName() : null,
-                entity.getCountry() != null ? entity.getCountry().getIsoCode() : null
+                entity.getCountry() != null ? entity.getCountry().getFlagUrl() : null
         );
     }
 

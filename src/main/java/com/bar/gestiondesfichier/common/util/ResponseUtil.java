@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class ResponseUtil {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 200;
     private static final int DEFAULT_PAGE_NUMBER = 0;
 
     /**
@@ -103,7 +103,7 @@ public class ResponseUtil {
      */
     public static Pageable createPageable(Integer page, Integer size, String sort, String direction) {
         int pageNumber = page != null && page >= 0 ? page : DEFAULT_PAGE_NUMBER;
-        int pageSize = size != null && size > 0 && size <= 100 ? size : DEFAULT_PAGE_SIZE;
+        int pageSize = size != null && size > 0 && size <= 200 ? size : DEFAULT_PAGE_SIZE;
         
         if (sort != null && !sort.isEmpty()) {
             Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? 

@@ -1,6 +1,7 @@
 package com.bar.gestiondesfichier.location.model;
 
 import com.bar.gestiondesfichier.common.entity.NamedEntity;
+import com.bar.gestiondesfichier.entity.Account;
 import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -34,7 +35,9 @@ public class LocationEntity extends NamedEntity {
     @JoinColumn(name = "country_id", nullable = false)
     @JsonBackReference("country-entities")
     private Country country;
-
+    @OneToMany(mappedBy = "locationEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("entity-accounts")
+    private List<Account> accounts;
     @OneToMany(mappedBy = "locationEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("entity-modules")
     private List<Module> modules;

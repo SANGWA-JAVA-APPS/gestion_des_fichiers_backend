@@ -35,14 +35,14 @@ public class DataInitializationService implements CommandLineRunner {
         // Create Account Categories
         AccountCategory adminCategory = createCategoryIfNotExists("ADMIN", "System Administrator Category");
         AccountCategory userCategory = createCategoryIfNotExists("USER", "Regular User Category");
-        AccountCategory managerCategory = createCategoryIfNotExists("MANAGER", "File Manager Category");
+//        AccountCategory managerCategory = createCategoryIfNotExists("MANAGER", "File Manager Category");
 
         // Create Default Accounts
         createAccountIfNotExists("admin", "admin123", "admin@gestiondesfichier.com",
                 "System Administrator", "+1234567890", adminCategory);
 
-        createAccountIfNotExists("manager", "manager123", "manager@gestiondesfichier.com",
-                "File Manager", "+1234567891", managerCategory);
+//        createAccountIfNotExists("manager", "manager123", "manager@gestiondesfichier.com",
+//                "File Manager", "+1234567891", managerCategory);
 
         createAccountIfNotExists("user", "user123", "user@gestiondesfichier.com",
                 "Regular User", "+1234567892", userCategory);

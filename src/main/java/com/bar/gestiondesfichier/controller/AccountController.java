@@ -1,8 +1,12 @@
 package com.bar.gestiondesfichier.controller;
 
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.dto.AccountDTO;
 import com.bar.gestiondesfichier.entity.Account;
 import com.bar.gestiondesfichier.entity.AccountCategory;
+import com.bar.gestiondesfichier.location.model.LocationEntity;
+import com.bar.gestiondesfichier.location.repository.LocationEntityRepository;
+import com.bar.gestiondesfichier.mapper.AccountMapper;
 import com.bar.gestiondesfichier.repository.AccountRepository;
 import com.bar.gestiondesfichier.repository.AccountCategoryRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,13 +38,14 @@ public class AccountController {
     private final AccountRepository accountRepository;
     private final AccountCategoryRepository accountCategoryRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public AccountController(AccountRepository accountRepository, 
-                           AccountCategoryRepository accountCategoryRepository,
-                           PasswordEncoder passwordEncoder) {
+    private final LocationEntityRepository locationEntityRepository;
+    public AccountController(AccountRepository accountRepository,
+                             AccountCategoryRepository accountCategoryRepository,
+                             PasswordEncoder passwordEncoder, LocationEntityRepository locationEntityRepository) {
         this.accountRepository = accountRepository;
         this.accountCategoryRepository = accountCategoryRepository;
         this.passwordEncoder = passwordEncoder;
+        this.locationEntityRepository = locationEntityRepository;
     }
 
     @GetMapping
@@ -60,8 +65,9 @@ public class AccountController {
             
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<Account> accounts = accountRepository.findByActiveTrue(pageable);
-            
-            return ResponseUtil.successWithPagination(accounts);
+ Page<AccountDTO> dtoPage = accounts.map(AccountMapper::toDTO);
+            ;
+            return ResponseUtil.successWithPagination(dtoPage);
         } catch (IllegalArgumentException e) {
             log.warn("Invalid parameters for account retrieval: {}", e.getMessage());
             return ResponseUtil.badRequest(e.getMessage());
@@ -71,7 +77,7 @@ public class AccountController {
         }
     }
 
-        @GetMapping("/{id}")
+    @GetMapping("/{id}")
     @Operation(summary = "Get account by ID", description = "Retrieve a specific account by ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Account retrieved successfully"),
@@ -85,9 +91,11 @@ public class AccountController {
             
             log.info("Retrieving account by ID: {}", id);
             Optional<Account> account = accountRepository.findByIdAndActiveTrue(id);
-            
+
             if (account.isPresent()) {
-                return ResponseUtil.success(account.get(), "Account retrieved successfully");
+                AccountDTO dto = AccountMapper.toDTO(account.get());
+
+                return ResponseUtil.success(dto, "Account retrieved successfully");
             } else {
                 return ResponseUtil.badRequest("Account not found with ID: " + id);
             }
@@ -106,17 +114,22 @@ public class AccountController {
     })
     public ResponseEntity<AccountDTO> createAccount(@RequestBody AccountRequest accountRequest) {
         try {
-            // Check if username already exists
+            // 1. Username validation
             if (accountRepository.existsByUsername(accountRequest.getUsername())) {
                 return ResponseEntity.badRequest().build();
             }
 
-            // Find the account category
-            Optional<AccountCategory> category = accountCategoryRepository.findById(accountRequest.getCategoryId());
-            if (!category.isPresent()) {
-                return ResponseEntity.badRequest().build();
-            }
+            // 2. Load category
+            AccountCategory category = accountCategoryRepository
+                    .findById(accountRequest.getCategoryId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid category"));
 
+            // 3. Load location entity (REQUIRED)
+            LocationEntity locationEntity = locationEntityRepository
+                    .findById(accountRequest.getLocationEntityId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid location entity"));
+
+            // 4. Build account
             Account account = new Account();
             account.setUsername(accountRequest.getUsername());
             account.setPassword(passwordEncoder.encode(accountRequest.getPassword()));
@@ -124,11 +137,18 @@ public class AccountController {
             account.setFullName(accountRequest.getFullName());
             account.setPhoneNumber(accountRequest.getPhoneNumber());
             account.setGender(accountRequest.getGender());
-            account.setAccountCategory(category.get());
+            account.setAccountCategory(category);
+            account.setLocationEntity(locationEntity);
             account.setActive(true);
 
+            // 5. Save
             Account savedAccount = accountRepository.save(account);
-            return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(savedAccount));
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(AccountMapper.toDTO(savedAccount));
+
+
         } catch (Exception e) {
             log.error("Error creating account", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -167,8 +187,17 @@ public class AccountController {
                 }
             }
 
+            // Update LocationEntity
+            if (accountRequest.getLocationEntityId() != null) {
+                locationEntityRepository.findById(accountRequest.getLocationEntityId())
+                        .ifPresent(account::setLocationEntity);
+            } else {
+                account.setLocationEntity(null); // remove if not provided
+            }
+
             Account savedAccount = accountRepository.save(account);
-            return ResponseEntity.ok(convertToDTO(savedAccount));
+            return ResponseEntity.ok(AccountMapper.toDTO(savedAccount));
+
         } catch (Exception e) {
             log.error("Error updating account with id: " + id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -199,33 +228,8 @@ public class AccountController {
         }
     }
 
-    // Simple DTO for response
-    @Setter
-    @Getter
-    public static class AccountDTO {
-        // Getters and Setters
-        private Long id;
-        private String username;
-        private String email;
-        private String fullName;
-        private String phoneNumber;
-        private String gender;
-        private String categoryName;
-        private boolean active;
 
-        public AccountDTO(Long id, String username, String email, String fullName, 
-                         String phoneNumber, String gender, String categoryName, boolean active) {
-            this.id = id;
-            this.username = username;
-            this.email = email;
-            this.fullName = fullName;
-            this.phoneNumber = phoneNumber;
-            this.gender = gender;
-            this.categoryName = categoryName;
-            this.active = active;
-        }
 
-    }
 
 
     @Setter
@@ -239,7 +243,7 @@ public class AccountController {
         private String phoneNumber;
         private String gender;
         private Long categoryId;
-
+        private Long locationEntityId;
     }
 
     // Simple DTO for request
@@ -254,20 +258,10 @@ public class AccountController {
         private String phoneNumber;
         private String gender;
         private Long categoryId;
-
+        private Long locationEntityId;
     }
 
-    // Conversion method
-    private AccountDTO convertToDTO(Account account) {
-        return new AccountDTO(
-            account.getId(),
-            account.getUsername(),
-            account.getEmail(),
-            account.getFullName(),
-            account.getPhoneNumber(),
-            account.getGender(),
-            account.getAccountCategory() != null ? account.getAccountCategory().getName() : null,
-            account.isActive()
-        );
-    }
+
+
+
 }

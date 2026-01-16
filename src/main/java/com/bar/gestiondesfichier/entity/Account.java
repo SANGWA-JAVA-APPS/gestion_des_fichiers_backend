@@ -1,5 +1,7 @@
 package com.bar.gestiondesfichier.entity;
 
+import com.bar.gestiondesfichier.location.model.LocationEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -8,43 +10,41 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "accounts")
 public class Account {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Column(nullable = false, unique = true)
     private String username;
-
     @Column(nullable = false)
     private String password;
-
+    public LocationEntity getLocationEntity() {
+        return locationEntity;
+    }
+    public void setLocationEntity(LocationEntity locationEntity) {
+        this.locationEntity = locationEntity;
+    }
     @Column(nullable = false)
     private String email;
-
     @Column(name = "full_name", nullable = false)
     private String fullName;
-
     @Column(name = "phone_number")
     private String phoneNumber;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_entity_id")
+    @JsonBackReference("entity-accounts")
+    private LocationEntity locationEntity;
     @Column(nullable = true)
     private String gender;
-
     @Column(nullable = false)
     private boolean active = true;
-
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_category_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "accounts"})
     private AccountCategory accountCategory;
-
     // Default constructor
     public Account() {}
 
