@@ -42,7 +42,7 @@ public class Section extends NamedEntity {
     private AccessLevel accessLevel;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "module_id", nullable = false)
+    @JoinColumn(name = "module_id", nullable = true)
     @JsonBackReference("module-sections")
     private Module module;
 

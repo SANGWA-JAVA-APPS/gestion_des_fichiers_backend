@@ -30,7 +30,8 @@ public interface SectionRepository extends BaseRepository<Section> {
     
     // Non-paginated methods (legacy support)
     List<Section> findByModuleIdAndActiveTrue(Long moduleId);
-    
+    boolean existsBySectionCode(String sectionCode);
+
     List<Section> findBySectionTypeAndActiveTrue(SectionType sectionType);
     
     List<Section> findByAccessLevelAndActiveTrue(AccessLevel accessLevel);

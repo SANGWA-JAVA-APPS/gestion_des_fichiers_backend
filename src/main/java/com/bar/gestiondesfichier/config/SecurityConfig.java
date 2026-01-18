@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/files/**").authenticated() // File management endpoints require authentication
                 .requestMatchers("/api/auth/**").authenticated()
                 .requestMatchers("/api/**").authenticated()
+                    .requestMatchers("/api/common-docs/**").permitAll()
                 .anyRequest().permitAll()
             )
             .authenticationProvider(daoAuthenticationProvider())
