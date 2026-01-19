@@ -162,4 +162,38 @@ public class SectionController {
             return ResponseUtil.badRequest("Failed to delete section: " + e.getMessage());
         }
     }
+
+
+
+    @GetMapping("/code/{sectionCode}")
+    @Operation(summary = "Get section by code", description = "Retrieve an active section by sectionCode")
+    public ResponseEntity<Map<String, Object>> getSectionByCode(
+            @PathVariable String sectionCode) {
+        try {
+            if (sectionCode == null || sectionCode.trim().isEmpty()) {
+                return ResponseUtil.badRequest("Section code is required");
+            }
+
+            Optional<Section> section =
+                    sectionRepository.findBySectionCodeAndActiveTrue(sectionCode);
+
+            return section
+                    .map(s -> ResponseUtil.success(
+                            SectionMapper.toResponseDTO(s),
+                            "Section retrieved successfully"
+                    ))
+                    .orElseGet(() ->
+                            ResponseUtil.badRequest(
+                                    "Section not found with code: " + sectionCode
+                            )
+                    );
+
+        } catch (Exception e) {
+            log.error("Error retrieving section with code: {}", sectionCode, e);
+            return ResponseUtil.badRequest(
+                    "Failed to retrieve section: " + e.getMessage()
+            );
+        }
+    }
+
 }
