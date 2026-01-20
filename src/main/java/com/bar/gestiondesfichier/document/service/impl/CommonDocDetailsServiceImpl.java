@@ -3,10 +3,12 @@ package com.bar.gestiondesfichier.document.service.impl;
 import com.bar.gestiondesfichier.document.dto.CommonDocDetailsRequestDTO;
 import com.bar.gestiondesfichier.document.dto.CommonDocDetailsResponseDTO;
 import com.bar.gestiondesfichier.document.model.CommonDocDetails;
+import com.bar.gestiondesfichier.document.model.SectionCategory;
 import com.bar.gestiondesfichier.document.repository.CommonDocDetailsRepository;
+import com.bar.gestiondesfichier.document.repository.SectionCategoryRepository;
 import com.bar.gestiondesfichier.document.service.CommonDocDetailsService;
-import com.bar.gestiondesfichier.location.model.Section;
-import com.bar.gestiondesfichier.location.repository.SectionRepository;
+
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -15,79 +17,86 @@ import org.springframework.stereotype.Service;
 public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
 
     private final CommonDocDetailsRepository repo;
-    private final SectionRepository sectionRepo;
+    private final SectionCategoryRepository sectionCategoryRepo;
 
-    public CommonDocDetailsServiceImpl(CommonDocDetailsRepository repo, SectionRepository sectionRepo) {
+    public CommonDocDetailsServiceImpl(
+            CommonDocDetailsRepository repo,
+            SectionCategoryRepository sectionCategoryRepo
+    ) {
         this.repo = repo;
-        this.sectionRepo = sectionRepo;
+        this.sectionCategoryRepo = sectionCategoryRepo;
     }
 
     @Override
-    public CommonDocDetailsResponseDTO createCommonDocDetails(CommonDocDetailsRequestDTO request) {
+    public CommonDocDetailsResponseDTO createCommonDocDetails(
+            CommonDocDetailsRequestDTO request
+    ) {
         CommonDocDetails doc = new CommonDocDetails();
-        doc.setReference(request.getReference());
-        doc.setDescription(request.getDescription());
-        doc.setStatus(request.getStatus());
-        doc.setDateTime(request.getDateTime());
-        doc.setVersion(request.getVersion());
-        doc.setExpirationDate(request.getExpirationDate());
-
-        Section section = sectionRepo.findById(request.getSectionId())
-                .orElseThrow(() -> new RuntimeException("Section not found"));
-        doc.setSection(section);
-
-        CommonDocDetails saved = repo.save(doc);
-        return toDTO(saved);
+        applyRequest(doc, request);
+        return toDTO(repo.save(doc));
     }
 
     @Override
     public CommonDocDetailsResponseDTO getCommonDocDetailsById(Long id) {
-        CommonDocDetails doc = repo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Document not found"));
-        return toDTO(doc);
+        return toDTO(findByIdOrThrow(id));
     }
 
     @Override
-    public CommonDocDetailsResponseDTO updateCommonDocDetails(Long id, CommonDocDetailsRequestDTO request) {
-        CommonDocDetails doc = repo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Document not found"));
-
-        doc.setReference(request.getReference());
-        doc.setDescription(request.getDescription());
-        doc.setStatus(request.getStatus());
-        doc.setDateTime(request.getDateTime());
-        doc.setVersion(request.getVersion());
-        doc.setExpirationDate(request.getExpirationDate());
-
-        Section section = sectionRepo.findById(request.getSectionId())
-                .orElseThrow(() -> new RuntimeException("Section not found"));
-        doc.setSection(section);
-
-        CommonDocDetails updated = repo.save(doc);
-        return toDTO(updated);
+    public CommonDocDetailsResponseDTO updateCommonDocDetails(
+            Long id,
+            CommonDocDetailsRequestDTO request
+    ) {
+        CommonDocDetails doc = findByIdOrThrow(id);
+        applyRequest(doc, request);
+        return toDTO(repo.save(doc));
     }
 
     @Override
     public void deleteCommonDocDetails(Long id) {
-        if (!repo.existsById(id)) {
-            throw new RuntimeException("Document not found");
-        }
-        repo.deleteById(id);
+        CommonDocDetails doc = findByIdOrThrow(id);
+        repo.delete(doc);
     }
 
     @Override
     public Page<CommonDocDetailsResponseDTO> getCommonDocDetails(
             String reference,
             String status,
-            Long sectionId,
-            String sectionCode,
+            Long sectionCategoryId,
+            String sectionCategoryCode,
             Pageable pageable
     ) {
-        Page<CommonDocDetails> page = repo.getCommonDocDetails(reference, status, sectionId,sectionCode, pageable);
-        return page.map(this::toDTO);
+        return repo
+                .getCommonDocDetails(reference, status, sectionCategoryId, sectionCategoryCode, pageable)
+                .map(this::toDTO);
     }
 
-    // Mapper from entity → DTO
+    // ------------------------
+    // Internal helpers
+    // ------------------------
+
+    private CommonDocDetails findByIdOrThrow(Long id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Document not found"));
+    }
+
+    private void applyRequest(
+            CommonDocDetails doc,
+            CommonDocDetailsRequestDTO request
+    ) {
+        doc.setReference(request.getReference());
+        doc.setDescription(request.getDescription());
+        doc.setStatus(request.getStatus());
+        doc.setDateTime(request.getDateTime());
+        doc.setVersion(request.getVersion());
+        doc.setExpirationDate(request.getExpirationDate());
+        doc.setSectionCategory(resolveSectionCategory(request.getSectionCategoryId()));
+    }
+
+    private SectionCategory resolveSectionCategory(Long sectionCategoryId) {
+        return sectionCategoryRepo.findById(sectionCategoryId)
+                .orElseThrow(() -> new IllegalArgumentException("Section category not found"));
+    }
+
     private CommonDocDetailsResponseDTO toDTO(CommonDocDetails doc) {
         CommonDocDetailsResponseDTO dto = new CommonDocDetailsResponseDTO();
         dto.setId(doc.getId());
@@ -97,7 +106,12 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
         dto.setDateTime(doc.getDateTime());
         dto.setVersion(doc.getVersion());
         dto.setExpirationDate(doc.getExpirationDate());
-        dto.setSectionId(doc.getSection().getId());
+
+        SectionCategory category = doc.getSectionCategory();
+        dto.setSectionCategoryId(category.getId());
+        dto.setSectionCategoryCode(category.getCode());
+        dto.setSectionCategoryName(category.getName());
+
         return dto;
     }
 }

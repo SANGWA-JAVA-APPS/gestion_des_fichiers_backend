@@ -178,4 +178,31 @@ public class SectionCategoryController {
             return ResponseUtil.badRequest("Failed to delete section category: " + e.getMessage());
         }
     }
+
+    @GetMapping("/code/{code}")
+    @Operation(summary = "Get section category by code", description = "Retrieve a specific section category by its code")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Section category retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Section category not found")
+    })
+    public ResponseEntity<?> getSectionCategoryByCode(@PathVariable String code) {
+        try {
+            log.info("Retrieving section category by code: {}", code);
+
+            if (code == null || code.trim().isEmpty()) {
+                return ResponseUtil.badRequest("Section category code is required");
+            }
+
+            Optional<SectionCategory> categoryOpt = sectionCategoryRepository.findByCode(code);
+
+            return categoryOpt
+                    .map(category -> ResponseUtil.success(category, "Section category retrieved successfully"))
+                    .orElseGet(() -> ResponseUtil.badRequest("Section category not found with code: " + code));
+
+        } catch (Exception e) {
+            log.error("Error retrieving section category with code: {}", code, e);
+            return ResponseUtil.badRequest("Failed to retrieve section category: " + e.getMessage());
+        }
+    }
+
 }

@@ -13,14 +13,13 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CommonDocDetailsRepository extends JpaRepository<CommonDocDetails, Long> {
-
     @Query("""
     SELECT c FROM CommonDocDetails c
     WHERE (:reference IS NULL OR LOWER(c.reference) LIKE LOWER(CONCAT('%', :reference, '%')))
       AND (:status IS NULL OR c.status = :status)
-      AND (:sectionId IS NULL OR c.section.id = :sectionId)
-      AND (:sectionCode IS NULL OR c.section.sectionCode = :sectionCode)
-""")
+      AND (:sectionId IS NULL OR c.sectionCategory.id = :sectionId)
+      AND (:sectionCode IS NULL OR c.sectionCategory.code = :sectionCode)
+    """)
     Page<CommonDocDetails> getCommonDocDetails(
             @Param("reference") String reference,
             @Param("status") String status,

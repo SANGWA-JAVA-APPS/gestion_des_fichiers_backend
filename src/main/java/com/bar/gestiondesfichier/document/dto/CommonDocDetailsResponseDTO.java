@@ -1,4 +1,5 @@
 package com.bar.gestiondesfichier.document.dto;
+
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -10,6 +11,8 @@ public class CommonDocDetailsResponseDTO {
     private String status;
     private LocalDateTime dateTime;
     private String version;
-    private Long sectionId;
+    private Long sectionCategoryId;      // updated
+    private String sectionCategoryCode;   // new
+    private String sectionCategoryName;   // new
     private LocalDateTime expirationDate;
 }

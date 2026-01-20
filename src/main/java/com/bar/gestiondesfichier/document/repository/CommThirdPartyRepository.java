@@ -85,5 +85,49 @@ public interface CommThirdPartyRepository extends JpaRepository<CommThirdParty, 
             + "WHERE t.active = true")
     Page<CommThirdPartyProjection> findAllActiveProjections(Pageable pageable);
 
+    /**
+     * Get all active commercial third parties as projections with optional filtering
+     * by statusId, sectionId, or search term (name/location/activities).
+     */
+    @Query(
+            value = """
+            SELECT c FROM CommThirdParty c
+            LEFT JOIN FETCH c.document d
+            LEFT JOIN FETCH c.section s
+            LEFT JOIN FETCH c.status st
+            LEFT JOIN FETCH c.doneBy db
+            WHERE c.active = true
+            AND (:statusId IS NULL OR st.id = :statusId)
+            AND (:sectionId IS NULL OR s.id = :sectionId)
+            AND (:search IS NULL OR 
+                LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                LOWER(c.location) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                LOWER(c.activities) LIKE LOWER(CONCAT('%', :search, '%'))
+            )
+        """,
+            countQuery = """
+            SELECT COUNT(c) FROM CommThirdParty c
+            LEFT JOIN c.document d
+            LEFT JOIN c.section s
+            LEFT JOIN c.status st
+            LEFT JOIN c.doneBy db
+            WHERE c.active = true
+            AND (:statusId IS NULL OR st.id = :statusId)
+            AND (:sectionId IS NULL OR s.id = :sectionId)
+            AND (:search IS NULL OR 
+                LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                LOWER(c.location) LIKE LOWER(CONCAT('%', :search, '%')) OR
+                LOWER(c.activities) LIKE LOWER(CONCAT('%', :search, '%'))
+            )
+        """
+    )
+    Page<CommThirdPartyProjection> getAllCommThirdParties(
+            @Param("statusId") Long statusId,
+            @Param("sectionId") Long sectionId,
+            @Param("search") String search,
+            Pageable pageable
+    );
+
+
     Optional<CommThirdParty> findByIdAndActiveTrue(Long id);
 }

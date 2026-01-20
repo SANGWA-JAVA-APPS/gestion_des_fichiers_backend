@@ -17,7 +17,8 @@ import lombok.Setter;
 @Setter
 
 public class SectionCategory extends NamedEntity {
-
+    @Column(nullable = false, length = 50)
+    private String code;
     // Default constructor
     public SectionCategory() {
         super();

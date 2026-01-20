@@ -22,9 +22,9 @@ public class CommonDocDetails {
     private LocalDateTime dateTime;
     private String version;
     private LocalDateTime expirationDate;
-
     // Many CommonDocDetails can belong to one Section
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "section_id") // maps to section table's PK
-    private Section section;
+    @JoinColumn(name = "section_category_id", nullable = false)
+    private SectionCategory sectionCategory;
+
 }

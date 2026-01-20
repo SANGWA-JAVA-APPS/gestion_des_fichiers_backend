@@ -30,4 +30,8 @@ public interface SectionCategoryRepository extends JpaRepository<SectionCategory
     Optional<SectionCategory> findByNameAndActiveTrue(String name);
     List<SectionCategory> findByActiveTrueOrderByName();
     boolean existsByNameAndActiveTrue(String name);
+
+    Optional<SectionCategory> findByCode(String code);
+
+    boolean existsByCode(String code);
 }
