@@ -1,7 +1,10 @@
 package com.bar.gestiondesfichier.dto;
 
+import com.bar.gestiondesfichier.document.dto.SectionCategoryDTO;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Set;
 
 @Getter
 @Setter
@@ -25,6 +28,9 @@ public class AccountDTO {
     private Long locationEntityId;
     private String locationEntityName;
 
+
+    private Set<SectionCategoryDTO> sectionCategories;
+
     public AccountDTO(
             Long id,
             String username,
@@ -38,7 +44,8 @@ public class AccountDTO {
             Long countryId,
             String countryName,
             Long locationEntityId,
-            String locationEntityName
+            String locationEntityName,
+            Set<SectionCategoryDTO> sectionCategories
     ) {
         this.id = id;
         this.username = username;
@@ -53,5 +60,6 @@ public class AccountDTO {
         this.countryName = countryName;
         this.locationEntityId = locationEntityId;
         this.locationEntityName = locationEntityName;
+        this.sectionCategories = sectionCategories;
     }
 }

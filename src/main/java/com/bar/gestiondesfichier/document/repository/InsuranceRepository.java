@@ -24,21 +24,21 @@ public interface InsuranceRepository extends JpaRepository<Insurance, Long> {
     Page<Insurance> findByActiveTrueAndConcernsOrCoverageContaining(@Param("search") String search, Pageable pageable);
     
     @Query("SELECT i.id as id, i.dateTime as dateTime, i.concerns as concerns, " +
-           "i.coverage as coverage, i.values as values, " +
+           "i.coverage as coverage, i.insuranceValue as insuredValues, " +
            "i.dateValidity as dateValidity, i.renewalDate as renewalDate, " +
            "i.document as document, i.status as status, i.doneBy as doneBy " +
            "FROM Insurance i WHERE i.active = true")
     Page<InsuranceProjection> findAllActiveProjections(Pageable pageable);
     
     @Query("SELECT i.id as id, i.dateTime as dateTime, i.concerns as concerns, " +
-           "i.coverage as coverage, i.values as values, " +
+           "i.coverage as coverage, i.insuranceValue as insuredValues, " +
            "i.dateValidity as dateValidity, i.renewalDate as renewalDate, " +
            "i.document as document, i.status as status, i.doneBy as doneBy " +
            "FROM Insurance i WHERE i.active = true AND i.status.id = :statusId")
     Page<InsuranceProjection> findByActiveTrueAndStatusIdProjections(@Param("statusId") Long statusId, Pageable pageable);
     
     @Query("SELECT i.id as id, i.dateTime as dateTime, i.concerns as concerns, " +
-           "i.coverage as coverage, i.values as values, " +
+           "i.coverage as coverage, i.insuranceValue as insuredValues, " +
            "i.dateValidity as dateValidity, i.renewalDate as renewalDate, " +
            "i.document as document, i.status as status, i.doneBy as doneBy " +
            "FROM Insurance i WHERE i.active = true AND " +
@@ -47,7 +47,7 @@ public interface InsuranceRepository extends JpaRepository<Insurance, Long> {
     Page<InsuranceProjection> findByActiveTrueAndSearchTermsProjections(@Param("search") String search, Pageable pageable);
     
     @Query("SELECT i.id as id, i.dateTime as dateTime, i.concerns as concerns, " +
-           "i.coverage as coverage, i.values as values, " +
+           "i.coverage as coverage, i.insuranceValue as insuredValues, " +
            "i.dateValidity as dateValidity, i.renewalDate as renewalDate, " +
            "i.document as document, i.status as status, i.doneBy as doneBy " +
            "FROM Insurance i WHERE i.active = true AND " +

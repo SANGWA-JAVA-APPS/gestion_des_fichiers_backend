@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public interface InsuranceProjection extends BaseDocumentRelatedProjection {
     String getConcerns();
     String getCoverage();
-    BigDecimal getValues();
+    BigDecimal getInsuredValue();
     LocalDateTime getDateValidity();
     LocalDateTime getRenewalDate();
 }

@@ -1,7 +1,13 @@
 package com.bar.gestiondesfichier.mapper;
 
+import com.bar.gestiondesfichier.document.dto.SectionCategoryDTO;
 import com.bar.gestiondesfichier.dto.AccountDTO;
+
 import com.bar.gestiondesfichier.entity.Account;
+import com.bar.gestiondesfichier.document.model.SectionCategory;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class AccountMapper {
 
@@ -31,6 +37,15 @@ public class AccountMapper {
             }
         }
 
+        // ✅ Map section categories
+        Set<SectionCategoryDTO> sectionCategories =
+                account.getSectionCategories() == null
+                        ? Set.of()
+                        : account.getSectionCategories()
+                        .stream()
+                        .map(AccountMapper::toSectionCategoryDTO)
+                        .collect(Collectors.toSet());
+
         return new AccountDTO(
                 account.getId(),
                 account.getUsername(),
@@ -44,7 +59,16 @@ public class AccountMapper {
                 countryId,
                 countryName,
                 locationEntityId,
-                locationEntityName
+                locationEntityName,
+                sectionCategories
+        );
+    }
+
+    private static SectionCategoryDTO toSectionCategoryDTO(SectionCategory sectionCategory) {
+        return new SectionCategoryDTO(
+                sectionCategory.getId(),
+                sectionCategory.getName(),
+                sectionCategory.getCode()
         );
     }
 }

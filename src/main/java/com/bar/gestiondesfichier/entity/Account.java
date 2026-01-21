@@ -1,11 +1,14 @@
 package com.bar.gestiondesfichier.entity;
 
+import com.bar.gestiondesfichier.document.model.SectionCategory;
 import com.bar.gestiondesfichier.location.model.LocationEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "accounts")
@@ -45,6 +48,39 @@ public class Account {
     @JoinColumn(name = "account_category_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "accounts"})
     private AccountCategory accountCategory;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "account_section_categories",
+            joinColumns = @JoinColumn(name = "account_id"),
+            inverseJoinColumns = @JoinColumn(name = "section_category_id"),
+            uniqueConstraints = @UniqueConstraint(
+                    columnNames = {"account_id", "section_category_id"}
+            )
+    )
+
+    @JsonIgnoreProperties("accounts")
+    private Set<SectionCategory> sectionCategories = new HashSet<>();
+    public Set<SectionCategory> getSectionCategories() {
+        return sectionCategories;
+    }
+
+    public void setSectionCategories(Set<SectionCategory> sectionCategories) {
+        this.sectionCategories = sectionCategories;
+    }
+
+    public void addSectionCategory(SectionCategory sectionCategory) {
+        this.sectionCategories.add(sectionCategory);
+    }
+
+    public void removeSectionCategory(SectionCategory sectionCategory) {
+        this.sectionCategories.remove(sectionCategory);
+    }
+
+    public void clearSectionCategories() {
+        this.sectionCategories.clear();
+    }
+
     // Default constructor
     public Account() {}
 
@@ -110,6 +146,8 @@ public class Account {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
+
+
 
     @PreUpdate
     protected void onUpdate() {

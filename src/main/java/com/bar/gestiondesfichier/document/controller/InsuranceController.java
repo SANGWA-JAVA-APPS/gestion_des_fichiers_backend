@@ -163,8 +163,8 @@ public class InsuranceController {
             if (insurance.getCoverage() != null) {
                 existing.setCoverage(insurance.getCoverage());
             }
-            if (insurance.getValues() != null) {
-                existing.setValues(insurance.getValues());
+            if (insurance.getInsuranceValue() != null) {
+                existing.setInsuranceValue(insurance.getInsuranceValue());
             }
             if (insurance.getDateValidity() != null) {
                 existing.setDateValidity(insurance.getDateValidity());

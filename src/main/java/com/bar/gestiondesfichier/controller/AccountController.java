@@ -1,6 +1,8 @@
 package com.bar.gestiondesfichier.controller;
 
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
+import com.bar.gestiondesfichier.document.model.SectionCategory;
+import com.bar.gestiondesfichier.document.repository.SectionCategoryRepository;
 import com.bar.gestiondesfichier.dto.AccountDTO;
 import com.bar.gestiondesfichier.entity.Account;
 import com.bar.gestiondesfichier.entity.AccountCategory;
@@ -25,8 +27,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -38,13 +40,17 @@ public class AccountController {
     private final AccountRepository accountRepository;
     private final AccountCategoryRepository accountCategoryRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final SectionCategoryRepository sectionCategoryRepository;
     private final LocationEntityRepository locationEntityRepository;
     public AccountController(AccountRepository accountRepository,
                              AccountCategoryRepository accountCategoryRepository,
-                             PasswordEncoder passwordEncoder, LocationEntityRepository locationEntityRepository) {
+                             PasswordEncoder passwordEncoder, SectionCategoryRepository sectionCategoryRepository, LocationEntityRepository locationEntityRepository) {
         this.accountRepository = accountRepository;
         this.accountCategoryRepository = accountCategoryRepository;
         this.passwordEncoder = passwordEncoder;
+
+        this.sectionCategoryRepository = sectionCategoryRepository;
         this.locationEntityRepository = locationEntityRepository;
     }
 
@@ -108,52 +114,75 @@ public class AccountController {
     @PostMapping
     @Operation(summary = "Create account", description = "Create a new account")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Account created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
+            @ApiResponse(responseCode = "201", description = "Account created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<AccountDTO> createAccount(@RequestBody AccountRequest accountRequest) {
-        try {
-            // 1. Username validation
-            if (accountRepository.existsByUsername(accountRequest.getUsername())) {
-                return ResponseEntity.badRequest().build();
+
+        // 1. Username validation
+        if (accountRepository.existsByUsername(accountRequest.getUsername())) {
+            throw new IllegalArgumentException("Username already exists: " + accountRequest.getUsername());
+        }
+
+        // 2. Load category
+        AccountCategory category = accountCategoryRepository
+                .findById(accountRequest.getCategoryId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Invalid account category id: " + accountRequest.getCategoryId()
+                ));
+
+        // 3. Load location entity
+        LocationEntity locationEntity = locationEntityRepository
+                .findById(accountRequest.getLocationEntityId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Invalid location entity id: " + accountRequest.getLocationEntityId()
+                ));
+
+        // 4. Build account
+        Account account = new Account();
+        account.setUsername(accountRequest.getUsername());
+        account.setPassword(passwordEncoder.encode(accountRequest.getPassword()));
+        account.setEmail(accountRequest.getEmail());
+        account.setFullName(accountRequest.getFullName());
+        account.setPhoneNumber(accountRequest.getPhoneNumber());
+        account.setGender(accountRequest.getGender());
+        account.setAccountCategory(category);
+        account.setLocationEntity(locationEntity);
+        account.setActive(true);
+
+        // 5. Handle section categories (optional)
+        if (accountRequest.getSectionCategoryIds() != null &&
+                !accountRequest.getSectionCategoryIds().isEmpty()) {
+
+            List<Long> sectionIds = accountRequest.getSectionCategoryIds();
+
+            List<Long> invalidIds = sectionIds.stream()
+                    .filter(id -> !sectionCategoryRepository.existsById(id))
+                    .toList();
+
+            if (!invalidIds.isEmpty()) {
+                throw new IllegalArgumentException("Invalid section category IDs: " + invalidIds);
             }
 
-            // 2. Load category
-            AccountCategory category = accountCategoryRepository
-                    .findById(accountRequest.getCategoryId())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid category"));
+            Set<SectionCategory> sections = sectionIds.stream()
+                    .map(id -> sectionCategoryRepository.findById(id)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "SectionCategory disappeared during validation: " + id
+                            )))
+                    .collect(Collectors.toSet());
 
-            // 3. Load location entity (REQUIRED)
-            LocationEntity locationEntity = locationEntityRepository
-                    .findById(accountRequest.getLocationEntityId())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid location entity"));
-
-            // 4. Build account
-            Account account = new Account();
-            account.setUsername(accountRequest.getUsername());
-            account.setPassword(passwordEncoder.encode(accountRequest.getPassword()));
-            account.setEmail(accountRequest.getEmail());
-            account.setFullName(accountRequest.getFullName());
-            account.setPhoneNumber(accountRequest.getPhoneNumber());
-            account.setGender(accountRequest.getGender());
-            account.setAccountCategory(category);
-            account.setLocationEntity(locationEntity);
-            account.setActive(true);
-
-            // 5. Save
-            Account savedAccount = accountRepository.save(account);
-
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(AccountMapper.toDTO(savedAccount));
-
-
-        } catch (Exception e) {
-            log.error("Error creating account", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            account.setSectionCategories(sections);
         }
+
+        // 6. Save
+        Account savedAccount = accountRepository.save(account);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(AccountMapper.toDTO(savedAccount));
     }
+
 
     @PutMapping("/{id}")
     @Operation(summary = "Update account", description = "Update an existing account")
@@ -229,6 +258,86 @@ public class AccountController {
     }
 
 
+    @PutMapping("/{id}/sections")
+    @Operation(summary = "Update user's section categories", description = "Replace all section categories for a user")
+    public ResponseEntity<?> updateAccountSections(
+            @PathVariable Long id,
+            @RequestBody List<Long> sectionIds
+    ) {
+        try {
+            Optional<Account> optionalAccount = accountRepository.findById(id);
+            if (!optionalAccount.isPresent() || !optionalAccount.get().isActive()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Account account = optionalAccount.get();
+
+            // Validate all section IDs exist
+            List<Long> invalidIds = sectionIds.stream()
+                    .filter(sectionId -> !sectionCategoryRepository.existsById(sectionId))
+                    .toList();
+
+            if (!invalidIds.isEmpty()) {
+                return ResponseEntity
+                        .badRequest()
+                        .body("Invalid section IDs: " + invalidIds);
+            }
+
+            // Load SectionCategory objects
+            Set<SectionCategory> sections = sectionIds.stream()
+                    .map(sectionCategoryRepository::findById)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toSet());
+
+            // Replace all sections atomically
+            account.setSectionCategories(sections);
+            accountRepository.save(account);
+
+            return ResponseEntity.ok("Section categories updated successfully");
+
+        } catch (Exception e) {
+            log.error("Error updating sections for account id: " + id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to update sections");
+        }
+    }
+
+
+    @GetMapping("/{id}/sections")
+    @Operation(summary = "Get user's section categories", description = "List all section categories assigned to a specific user")
+    public ResponseEntity<?> getAccountSections(@PathVariable Long id) {
+        try {
+            Optional<Account> optionalAccount = accountRepository.findById(id);
+            if (!optionalAccount.isPresent() || !optionalAccount.get().isActive()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Account account = optionalAccount.get();
+            Set<SectionCategory> sections = account.getSectionCategories();
+
+            // Return just the IDs or full objects depending on your DTO strategy
+            List<Map<String, Object>> sectionList = sections.stream()
+                    .map(s -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", s.getId());
+                        map.put("name", s.getName());
+                        map.put("code", s.getCode());
+                        return map;
+                    })
+                    .toList();
+
+            return ResponseEntity.ok(sectionList);
+
+        } catch (Exception e) {
+            log.error("Error retrieving sections for account id: " + id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to retrieve sections");
+        }
+    }
+
+
+
 
 
 
@@ -259,6 +368,7 @@ public class AccountController {
         private String gender;
         private Long categoryId;
         private Long locationEntityId;
+        private List<Long> sectionCategoryIds;
     }
 
 

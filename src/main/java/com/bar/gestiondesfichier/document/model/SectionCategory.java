@@ -1,9 +1,14 @@
 package com.bar.gestiondesfichier.document.model;
 
 import com.bar.gestiondesfichier.common.entity.NamedEntity;
+import com.bar.gestiondesfichier.entity.Account;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Section category entity representing different document categories
@@ -19,6 +24,9 @@ import lombok.Setter;
 public class SectionCategory extends NamedEntity {
     @Column(nullable = false, length = 50)
     private String code;
+    @ManyToMany(mappedBy = "sectionCategories", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("sectionCategories")
+    private Set<Account> accounts = new HashSet<>();
     // Default constructor
     public SectionCategory() {
         super();

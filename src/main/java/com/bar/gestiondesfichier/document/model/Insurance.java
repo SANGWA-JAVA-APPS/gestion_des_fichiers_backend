@@ -26,7 +26,7 @@ public class Insurance extends DocumentRelatedEntity {
     private String coverage;
 
     @Column(name = "values", precision = 15, scale = 2)
-    private BigDecimal values;
+    private BigDecimal insuranceValue;
 
     @Column(name = "date_validity")
     private LocalDateTime dateValidity;
