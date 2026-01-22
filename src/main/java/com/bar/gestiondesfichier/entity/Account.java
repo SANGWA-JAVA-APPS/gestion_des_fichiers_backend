@@ -2,17 +2,23 @@ package com.bar.gestiondesfichier.entity;
 
 import com.bar.gestiondesfichier.document.model.SectionCategory;
 import com.bar.gestiondesfichier.location.model.LocationEntity;
+import com.bar.gestiondesfichier.location.model.Permission;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-
+@Setter
+@Getter
 @Entity
 @Table(name = "accounts")
 public class Account {
+    // Setters
+    // Getters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,12 +26,7 @@ public class Account {
     private String username;
     @Column(nullable = false)
     private String password;
-    public LocationEntity getLocationEntity() {
-        return locationEntity;
-    }
-    public void setLocationEntity(LocationEntity locationEntity) {
-        this.locationEntity = locationEntity;
-    }
+
     @Column(nullable = false)
     private String email;
     @Column(name = "full_name", nullable = false)
@@ -36,7 +37,7 @@ public class Account {
     @JoinColumn(name = "location_entity_id")
     @JsonBackReference("entity-accounts")
     private LocationEntity locationEntity;
-    @Column(nullable = true)
+    @Column()
     private String gender;
     @Column(nullable = false)
     private boolean active = true;
@@ -61,13 +62,17 @@ public class Account {
 
     @JsonIgnoreProperties("accounts")
     private Set<SectionCategory> sectionCategories = new HashSet<>();
-    public Set<SectionCategory> getSectionCategories() {
-        return sectionCategories;
-    }
 
-    public void setSectionCategories(Set<SectionCategory> sectionCategories) {
-        this.sectionCategories = sectionCategories;
-    }
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "account_permissions",
+            joinColumns = @JoinColumn(name = "account_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id"),
+            uniqueConstraints = @UniqueConstraint(
+                    columnNames = {"account_id", "permission_id"}
+            )
+    )
+    private Set<Permission> permissions = new HashSet<>();
 
     public void addSectionCategory(SectionCategory sectionCategory) {
         this.sectionCategories.add(sectionCategory);
@@ -114,32 +119,6 @@ public class Account {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-
-    // Getters
-    public Long getId() { return id; }
-    public String getUsername() { return username; }
-    public String getPassword() { return password; }
-    public String getEmail() { return email; }
-    public String getFullName() { return fullName; }
-    public String getPhoneNumber() { return phoneNumber; }
-    public String getGender() { return gender; }
-    public boolean isActive() { return active; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public AccountCategory getAccountCategory() { return accountCategory; }
-
-    // Setters
-    public void setId(Long id) { this.id = id; }
-    public void setUsername(String username) { this.username = username; }
-    public void setPassword(String password) { this.password = password; }
-    public void setEmail(String email) { this.email = email; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-    public void setGender(String gender) { this.gender = gender; }
-    public void setActive(boolean active) { this.active = active; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-    public void setAccountCategory(AccountCategory accountCategory) { this.accountCategory = accountCategory; }
 
     @PrePersist
     protected void onCreate() {

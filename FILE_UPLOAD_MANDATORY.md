@@ -561,7 +561,7 @@ If you need to revert to optional file upload:
 // 1. Make file optional again
 @RequestPart(value = "file", required = false) MultipartFile file
 
-// 2. Add back the else block
+// 2. Add back the else Block
 if (file != null && !file.isEmpty()) {
     // Upload file
 } else {
