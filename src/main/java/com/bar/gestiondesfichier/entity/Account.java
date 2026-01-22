@@ -77,6 +77,17 @@ public class Account {
     public void addSectionCategory(SectionCategory sectionCategory) {
         this.sectionCategories.add(sectionCategory);
     }
+    public void addPermission(Permission permission) {
+        this.permissions.add(permission);
+    }
+
+    public void removePermission(Permission permission) {
+        this.permissions.remove(permission);
+    }
+
+    public void clearPermissions() {
+        this.permissions.clear();
+    }
 
     public void removeSectionCategory(SectionCategory sectionCategory) {
         this.sectionCategories.remove(sectionCategory);

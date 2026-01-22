@@ -1,10 +1,12 @@
 package com.bar.gestiondesfichier.mapper;
 
 import com.bar.gestiondesfichier.document.dto.SectionCategoryDTO;
+import com.bar.gestiondesfichier.document.dto.PermissionDTO;
 import com.bar.gestiondesfichier.dto.AccountDTO;
-
 import com.bar.gestiondesfichier.entity.Account;
 import com.bar.gestiondesfichier.document.model.SectionCategory;
+import com.bar.gestiondesfichier.location.model.Permission;
+
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,13 +39,22 @@ public class AccountMapper {
             }
         }
 
-        // ✅ Map section categories
+        // Map section categories
         Set<SectionCategoryDTO> sectionCategories =
                 account.getSectionCategories() == null
                         ? Set.of()
                         : account.getSectionCategories()
                         .stream()
                         .map(AccountMapper::toSectionCategoryDTO)
+                        .collect(Collectors.toSet());
+
+        // Map permissions
+        Set<PermissionDTO> permissions =
+                account.getPermissions() == null
+                        ? Set.of()
+                        : account.getPermissions()
+                        .stream()
+                        .map(AccountMapper::toPermissionDTO)
                         .collect(Collectors.toSet());
 
         return new AccountDTO(
@@ -60,7 +71,8 @@ public class AccountMapper {
                 countryName,
                 locationEntityId,
                 locationEntityName,
-                sectionCategories
+                sectionCategories,
+                permissions
         );
     }
 
@@ -69,6 +81,14 @@ public class AccountMapper {
                 sectionCategory.getId(),
                 sectionCategory.getName(),
                 sectionCategory.getCode()
+        );
+    }
+
+    private static PermissionDTO toPermissionDTO(Permission permission) {
+        return new PermissionDTO(
+                permission.getId(),
+                permission.getName(),
+                permission.getCode()
         );
     }
 }

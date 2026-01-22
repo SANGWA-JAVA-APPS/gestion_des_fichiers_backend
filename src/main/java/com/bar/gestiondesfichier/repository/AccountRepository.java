@@ -1,5 +1,6 @@
 package com.bar.gestiondesfichier.repository;
 
+import com.bar.gestiondesfichier.dto.UserBlockPermissionProjection;
 import com.bar.gestiondesfichier.entity.Account;
 import com.bar.gestiondesfichier.entity.AccountCategory;
 import org.springframework.data.domain.Page;
@@ -49,4 +50,21 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     long countByActiveTrue();
 
     long countByActiveFalse();
+
+
+
+    @Query("""
+    SELECT b.id AS blockId,
+           b.name AS blockName,
+           b.blockCode AS blockCode,
+           p.id AS permissionId,
+           p.name AS permissionName,
+           p.code AS permissionCode
+    FROM Account a
+    JOIN a.permissions p
+    JOIN p.block b
+    WHERE a.id = :accountId
+""")
+    List<UserBlockPermissionProjection> findUserPermissionsByAccountId(@Param("accountId") Long accountId);
+
 }

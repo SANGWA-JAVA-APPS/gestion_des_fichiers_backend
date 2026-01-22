@@ -1,13 +1,18 @@
 package com.bar.gestiondesfichier.dto;
 
+import com.bar.gestiondesfichier.document.dto.PermissionDTO;
 import com.bar.gestiondesfichier.document.dto.SectionCategoryDTO;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Set;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class AccountDTO {
 
     private Long id;
@@ -28,38 +33,6 @@ public class AccountDTO {
     private Long locationEntityId;
     private String locationEntityName;
 
-
     private Set<SectionCategoryDTO> sectionCategories;
-
-    public AccountDTO(
-            Long id,
-            String username,
-            String email,
-            String fullName,
-            String phoneNumber,
-            String gender,
-            Long categoryId,
-            String categoryName,
-            boolean active,
-            Long countryId,
-            String countryName,
-            Long locationEntityId,
-            String locationEntityName,
-            Set<SectionCategoryDTO> sectionCategories
-    ) {
-        this.id = id;
-        this.username = username;
-        this.email = email;
-        this.fullName = fullName;
-        this.phoneNumber = phoneNumber;
-        this.gender = gender;
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
-        this.active = active;
-        this.countryId = countryId;
-        this.countryName = countryName;
-        this.locationEntityId = locationEntityId;
-        this.locationEntityName = locationEntityName;
-        this.sectionCategories = sectionCategories;
-    }
+    private Set<PermissionDTO> permissions;
 }

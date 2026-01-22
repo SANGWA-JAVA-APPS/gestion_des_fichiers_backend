@@ -4,10 +4,13 @@ import com.bar.gestiondesfichier.common.util.ResponseUtil;
 import com.bar.gestiondesfichier.document.model.SectionCategory;
 import com.bar.gestiondesfichier.document.repository.SectionCategoryRepository;
 import com.bar.gestiondesfichier.dto.AccountDTO;
+import com.bar.gestiondesfichier.dto.UserBlockPermissionProjection;
 import com.bar.gestiondesfichier.entity.Account;
 import com.bar.gestiondesfichier.entity.AccountCategory;
 import com.bar.gestiondesfichier.location.model.LocationEntity;
+import com.bar.gestiondesfichier.location.model.Permission;
 import com.bar.gestiondesfichier.location.repository.LocationEntityRepository;
+import com.bar.gestiondesfichier.location.repository.PermissionRepository;
 import com.bar.gestiondesfichier.mapper.AccountMapper;
 import com.bar.gestiondesfichier.repository.AccountRepository;
 import com.bar.gestiondesfichier.repository.AccountCategoryRepository;
@@ -40,15 +43,16 @@ public class AccountController {
     private final AccountRepository accountRepository;
     private final AccountCategoryRepository accountCategoryRepository;
     private final PasswordEncoder passwordEncoder;
-
+private final PermissionRepository permissionRepository;
     private final SectionCategoryRepository sectionCategoryRepository;
     private final LocationEntityRepository locationEntityRepository;
     public AccountController(AccountRepository accountRepository,
                              AccountCategoryRepository accountCategoryRepository,
-                             PasswordEncoder passwordEncoder, SectionCategoryRepository sectionCategoryRepository, LocationEntityRepository locationEntityRepository) {
+                             PasswordEncoder passwordEncoder, PermissionRepository permissionRepository, SectionCategoryRepository sectionCategoryRepository, LocationEntityRepository locationEntityRepository) {
         this.accountRepository = accountRepository;
         this.accountCategoryRepository = accountCategoryRepository;
         this.passwordEncoder = passwordEncoder;
+        this.permissionRepository = permissionRepository;
 
         this.sectionCategoryRepository = sectionCategoryRepository;
         this.locationEntityRepository = locationEntityRepository;
@@ -174,6 +178,30 @@ public class AccountController {
 
             account.setSectionCategories(sections);
         }
+// 5b. Handle permissions (optional)
+        if (accountRequest.getPermissionIds() != null && !accountRequest.getPermissionIds().isEmpty()) {
+
+            List<Long> permissionIds = accountRequest.getPermissionIds();
+
+            // Validate all permissions exist
+            List<Long> invalidPermissionIds = permissionIds.stream()
+                    .filter(id -> !permissionRepository.existsById(id))
+                    .toList();
+
+            if (!invalidPermissionIds.isEmpty()) {
+                throw new IllegalArgumentException("Invalid permission IDs: " + invalidPermissionIds);
+            }
+
+            // Load Permission objects
+            Set<Permission> permissions = permissionIds.stream()
+                    .map(id -> permissionRepository.findById(id)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Permission disappeared during validation: " + id
+                            )))
+                    .collect(Collectors.toSet());
+
+            account.setPermissions(permissions);
+        }
 
         // 6. Save
         Account savedAccount = accountRepository.save(account);
@@ -192,7 +220,7 @@ public class AccountController {
         @ApiResponse(responseCode = "400", description = "Invalid request data"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<AccountDTO> updateAccount(@PathVariable Long id, @RequestBody AccountUpdateRequest  accountRequest) {
+    public ResponseEntity<AccountDTO> updateAccount(@PathVariable Long id, @RequestBody AccountRequest  accountRequest) {
         try {
             Optional<Account> existingAccount = accountRepository.findById(id);
             if (!existingAccount.isPresent() || !existingAccount.get().isActive()) {
@@ -336,24 +364,138 @@ public class AccountController {
         }
     }
 
+    @GetMapping("/{id}/permissions")
+    @Operation(summary = "Get user's permissions", description = "List all permissions assigned to a specific user")
+    public ResponseEntity<?> getAccountPermissions(@PathVariable Long id) {
+        try {
+            Optional<Account> optionalAccount = accountRepository.findById(id);
+            if (!optionalAccount.isPresent() || !optionalAccount.get().isActive()) {
+                return ResponseEntity.notFound().build();
+            }
 
+            Account account = optionalAccount.get();
+            Set<Permission> permissions = account.getPermissions();
 
+            // Return DTO-friendly response
+            List<Map<String, Object>> permissionList = permissions.stream()
+                    .map(p -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", p.getId());
+                        map.put("name", p.getName());
+                        map.put("code", p.getCode());
+                        return map;
+                    })
+                    .toList();
 
+            return ResponseEntity.ok(permissionList);
 
-
-    @Setter
-    @Getter
-    public static class AccountUpdateRequest {
-
-        private String username;
-        private String password; // optional
-        private String email;
-        private String fullName;
-        private String phoneNumber;
-        private String gender;
-        private Long categoryId;
-        private Long locationEntityId;
+        } catch (Exception e) {
+            log.error("Error retrieving permissions for account id: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to retrieve permissions");
+        }
     }
+
+
+    @GetMapping("/permissions")
+    @Operation(summary = "Get all permissions", description = "Retrieve all available permissions in the system")
+    public ResponseEntity<?> getAllPermissions() {
+        try {
+            List<Permission> permissions = permissionRepository.findAll();
+
+            // Map to DTO or simple response
+            List<Map<String, Object>> permissionList = permissions.stream()
+                    .map(p -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", p.getId());
+                        map.put("name", p.getName());
+                        map.put("code", p.getCode());
+                        return map;
+                    })
+                    .toList();
+
+            return ResponseEntity.ok(permissionList);
+
+        } catch (Exception e) {
+            log.error("Error retrieving all permissions", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to retrieve permissions");
+        }
+    }
+
+
+    @GetMapping("/{id}/blocks-permissions")
+    public ResponseEntity<?> getUserBlocksWithPermissions(@PathVariable Long id) {
+        List<UserBlockPermissionProjection> projectionList =
+                accountRepository.findUserPermissionsByAccountId(id);
+
+        // Group by Block
+        Map<Long, Map<String, Object>> blocksMap = new HashMap<>();
+        for (var p : projectionList) {
+            blocksMap.computeIfAbsent(p.getBlockId(), k -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("blockId", p.getBlockId());
+                map.put("blockName", p.getBlockName());
+                map.put("blockCode", p.getBlockCode());
+                map.put("permissions", new ArrayList<Map<String, Object>>());
+                return map;
+            });
+
+            Map<String, Object> permissionMap = new HashMap<>();
+            permissionMap.put("id", p.getPermissionId());
+            permissionMap.put("name", p.getPermissionName());
+            Object code = permissionMap.put("code", p.getPermissionCode());
+
+            ((List<Map<String, Object>>) blocksMap.get(p.getBlockId()).get("permissions"))
+                    .add(permissionMap);
+        }
+
+        return ResponseEntity.ok(blocksMap.values());
+    }
+
+
+    @PutMapping("/{id}/permissions")
+    @Operation(summary = "Update user's permissions", description = "Replace all permissions for a user")
+    public ResponseEntity<?> updateAccountPermissions(
+            @PathVariable Long id,
+            @RequestBody List<Long> permissionIds
+    ) {
+        try {
+            Optional<Account> optionalAccount = accountRepository.findById(id);
+            if (!optionalAccount.isPresent() || !optionalAccount.get().isActive()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Account account = optionalAccount.get();
+
+            // Validate all permission IDs exist
+            List<Long> invalidIds = permissionIds.stream()
+                    .filter(pid -> !permissionRepository.existsById(pid))
+                    .toList();
+
+            if (!invalidIds.isEmpty()) {
+                return ResponseEntity.badRequest().body("Invalid permission IDs: " + invalidIds);
+            }
+
+            // Load Permission objects
+            Set<Permission> permissions = permissionIds.stream()
+                    .map(pid -> permissionRepository.findById(pid).orElseThrow())
+                    .collect(Collectors.toSet());
+
+            account.setPermissions(permissions);
+            accountRepository.save(account);
+
+            return ResponseEntity.ok("Permissions updated successfully");
+
+        } catch (Exception e) {
+            log.error("Error updating permissions for account id: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to update permissions");
+        }
+    }
+
+
+
 
     // Simple DTO for request
     @Setter
@@ -369,6 +511,7 @@ public class AccountController {
         private Long categoryId;
         private Long locationEntityId;
         private List<Long> sectionCategoryIds;
+        private List<Long> permissionIds;
     }
 
 

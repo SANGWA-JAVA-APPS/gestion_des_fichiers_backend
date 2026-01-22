@@ -126,16 +126,16 @@ public class BlockSeeder implements CommandLineRunner {
 
         createBasicCrudPermissions(block, "COMPANY_POLICY");
 
-        createPermissionIfNotExists(block, "COMPANY_POLICY_ALL", "Full Access to Company Policies", "Full access to all company policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY", "Full Access to Company Policies", "Full access to all company policies");
 
-        createPermissionIfNotExists(block, "COMPANY_POLICY_FIN_ALL", "Financial Policies Access", "Full access to all Financial Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_PROC_ALL", "Procurement Policies Access", "Full access to all Procurement Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_HR_ALL", "HR Policies Access", "Full access to all HR Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_TECH_ALL", "Technical Maintenance Policies Access", "Full access to all Technical Maintenance Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_IT_ALL", "IT Policies Access", "Full access to all IT Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_RE_ALL", "Real Estate Policies Access", "Full access to all Real Estate Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_SH_ALL", "Shareholders Policies Access", "Full access to all Shareholders Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_LEGAL_ALL", "Legal Policies Access", "Full access to all Legal Policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY_FIN", "Financial Policies Access", "Full access to all Financial Policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY_PROC", "Procurement Policies Access", "Full access to all Procurement Policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY_HR", "HR Policies Access", "Full access to all HR Policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY_TECH", "Technical Maintenance Policies Access", "Full access to all Technical Maintenance Policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY_IT", "IT Policies Access", "Full access to all IT Policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY_RE", "Real Estate Policies Access", "Full access to all Real Estate Policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY_SH", "Shareholders Policies Access", "Full access to all Shareholders Policies");
+        createPermissionIfNotExists(block, "COMPANY_POLICY_LEGAL", "Legal Policies Access", "Full access to all Legal Policies");
     }
 
     private void seedHsePoliciesBlock() {
@@ -254,15 +254,15 @@ public class BlockSeeder implements CommandLineRunner {
     }
 
     private void createBasicCrudPermissions(Block block, String prefix) {
-        createPermissionIfNotExists(block, prefix + "_VIEW", "View " + block.getName(), "View " + block.getName() + " records");
-        createPermissionIfNotExists(block, prefix + "_CREATE", "Create " + block.getName(), "Create " + block.getName() + " records");
-        createPermissionIfNotExists(block, prefix + "_UPDATE", "Update " + block.getName(), "Update " + block.getName() + " records");
-        createPermissionIfNotExists(block, prefix + "_DELETE", "Delete " + block.getName(), "Delete " + block.getName() + " records");
-        createPermissionIfNotExists(
-                block,
-                prefix + "_ALL",
-                "Full Access to " + block.getName(),
-                "Full access to all actions on " + block.getName()
-        );
+//        createPermissionIfNotExists(block, prefix + "_VIEW", "View " + block.getName(), "View " + block.getName() + " records");
+//        createPermissionIfNotExists(block, prefix + "_CREATE", "Create " + block.getName(), "Create " + block.getName() + " records");
+//        createPermissionIfNotExists(block, prefix + "_UPDATE", "Update " + block.getName(), "Update " + block.getName() + " records");
+//        createPermissionIfNotExists(block, prefix + "_DELETE", "Delete " + block.getName(), "Delete " + block.getName() + " records");
+//        createPermissionIfNotExists(
+//                block,
+//                prefix + "_ALL",
+//                "Full Access to " + block.getName(),
+//                "Full access to all actions on " + block.getName()
+//        );
     }
 }
