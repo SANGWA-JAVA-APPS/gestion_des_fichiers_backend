@@ -34,6 +34,8 @@ public interface LocationEntityRepository extends BaseRepository<LocationEntity>
     
     Optional<LocationEntity> findByCodeAndActiveTrue(String code);
     
+    Optional<LocationEntity> findByNameIgnoreCaseAndActiveTrue(String name);
+    
     List<LocationEntity> findByNameContainingIgnoreCaseAndActiveTrue(String name);
     
     @Query("SELECT le as locationEntity, " +

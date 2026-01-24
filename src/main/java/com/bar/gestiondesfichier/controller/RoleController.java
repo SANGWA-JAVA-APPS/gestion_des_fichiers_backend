@@ -21,7 +21,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/roles")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:8081"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "http://localhost:8104", "https://ingenzi.codeguru-pro.com"})
 @Tag(name = "Role Management", description = "Role CRUD operations with pagination (mapped to Account Categories)")
 public class RoleController {
 

@@ -29,6 +29,8 @@ public class AccountDTO {
 
     private Long countryId;
     private String countryName;
+    private String countryIsoCode;
+    private String countryFlagUrl;
 
     private Long locationEntityId;
     private String locationEntityName;

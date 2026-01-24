@@ -63,7 +63,7 @@ public class Account {
     @JsonIgnoreProperties("accounts")
     private Set<SectionCategory> sectionCategories = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "account_permissions",
             joinColumns = @JoinColumn(name = "account_id"),

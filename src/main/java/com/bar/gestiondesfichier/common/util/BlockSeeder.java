@@ -7,11 +7,13 @@ import com.bar.gestiondesfichier.location.repository.PermissionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 @Transactional
+@Order(5) // Run after CountrySeeder(1), DocStatusSeeder(2), but before DataInitializationService(10)
 public class BlockSeeder implements CommandLineRunner {
 
     private final BlockRepository blockRepository;

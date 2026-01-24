@@ -29,6 +29,8 @@ public interface DocStatusRepository extends JpaRepository<DocStatus, Long> {
     Optional<DocStatus> findByIdAndActiveTrue(Long id);
 
     Optional<DocStatus> findByNameAndActiveTrue(String name);
+    
+    Optional<DocStatus> findByNameIgnoreCase(String name);
 
     List<DocStatus> findByActiveTrueOrderByName();
 

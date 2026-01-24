@@ -19,6 +19,13 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Query("SELECT a FROM Account a JOIN FETCH a.accountCategory WHERE a.username = :username")
     Optional<Account> findByUsername(@Param("username") String username);
 
+    @Query(value = """
+        SELECT a.* FROM accounts a
+        LEFT JOIN account_categories ac ON a.account_category_id = ac.id
+        WHERE a.username = :username
+    """, nativeQuery = true)
+    Optional<Account> findByUsernameNative(@Param("username") String username);
+
     Optional<Account> findByEmail(String email);
 
     Optional<Account> findByIdAndActiveTrue(Long id);

@@ -20,6 +20,8 @@ public class AccountMapper {
 
         Long countryId = null;
         String countryName = null;
+        String countryIsoCode = null;
+        String countryFlagUrl = null;
 
         Long locationEntityId = null;
         String locationEntityName = null;
@@ -36,6 +38,8 @@ public class AccountMapper {
             if (account.getLocationEntity().getCountry() != null) {
                 countryId = account.getLocationEntity().getCountry().getId();
                 countryName = account.getLocationEntity().getCountry().getName();
+                countryIsoCode = account.getLocationEntity().getCountry().getIsoCode();
+                countryFlagUrl = account.getLocationEntity().getCountry().getFlagUrl();
             }
         }
 
@@ -69,6 +73,8 @@ public class AccountMapper {
                 account.isActive(),
                 countryId,
                 countryName,
+                countryIsoCode,
+                countryFlagUrl,
                 locationEntityId,
                 locationEntityName,
                 sectionCategories,

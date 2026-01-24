@@ -32,31 +32,28 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/accounts")
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:8081"})
 @Tag(name = "Account Management", description = "Account CRUD operations with pagination")
+
 public class AccountController {
 
     private static final Logger log = LoggerFactory.getLogger(AccountController.class);
-    private final AccountRepository accountRepository;
-    private final AccountCategoryRepository accountCategoryRepository;
-    private final PasswordEncoder passwordEncoder;
-private final PermissionRepository permissionRepository;
-    private final SectionCategoryRepository sectionCategoryRepository;
-    private final LocationEntityRepository locationEntityRepository;
-    public AccountController(AccountRepository accountRepository,
-                             AccountCategoryRepository accountCategoryRepository,
-                             PasswordEncoder passwordEncoder, PermissionRepository permissionRepository, SectionCategoryRepository sectionCategoryRepository, LocationEntityRepository locationEntityRepository) {
-        this.accountRepository = accountRepository;
-        this.accountCategoryRepository = accountCategoryRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.permissionRepository = permissionRepository;
-
-        this.sectionCategoryRepository = sectionCategoryRepository;
-        this.locationEntityRepository = locationEntityRepository;
-    }
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private AccountCategoryRepository accountCategoryRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private PermissionRepository permissionRepository;
+    @Autowired
+    private SectionCategoryRepository sectionCategoryRepository;
+    @Autowired
+    private LocationEntityRepository locationEntityRepository;
 
     @GetMapping
     @Operation(summary = "Get all accounts", description = "Retrieve paginated list of active accounts with default 20 records per page")
@@ -72,10 +69,10 @@ private final PermissionRepository permissionRepository;
             @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc") String direction) {
         try {
             log.info("Retrieving accounts - page: {}, size: {}, sort: {} {}", page, size, sort, direction);
-            
+
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<Account> accounts = accountRepository.findByActiveTrue(pageable);
- Page<AccountDTO> dtoPage = accounts.map(AccountMapper::toDTO);
+            Page<AccountDTO> dtoPage = accounts.map(AccountMapper::toDTO);
             ;
             return ResponseUtil.successWithPagination(dtoPage);
         } catch (IllegalArgumentException e) {
@@ -98,7 +95,7 @@ private final PermissionRepository permissionRepository;
             if (id == null || id <= 0) {
                 return ResponseUtil.badRequest("Invalid account ID");
             }
-            
+
             log.info("Retrieving account by ID: {}", id);
             Optional<Account> account = accountRepository.findByIdAndActiveTrue(id);
 
@@ -118,9 +115,9 @@ private final PermissionRepository permissionRepository;
     @PostMapping
     @Operation(summary = "Create account", description = "Create a new account")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Account created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
+        @ApiResponse(responseCode = "201", description = "Account created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<AccountDTO> createAccount(@RequestBody AccountRequest accountRequest) {
 
@@ -133,15 +130,15 @@ private final PermissionRepository permissionRepository;
         AccountCategory category = accountCategoryRepository
                 .findById(accountRequest.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Invalid account category id: " + accountRequest.getCategoryId()
-                ));
+                "Invalid account category id: " + accountRequest.getCategoryId()
+        ));
 
         // 3. Load location entity
         LocationEntity locationEntity = locationEntityRepository
                 .findById(accountRequest.getLocationEntityId())
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Invalid location entity id: " + accountRequest.getLocationEntityId()
-                ));
+                "Invalid location entity id: " + accountRequest.getLocationEntityId()
+        ));
 
         // 4. Build account
         Account account = new Account();
@@ -156,8 +153,8 @@ private final PermissionRepository permissionRepository;
         account.setActive(true);
 
         // 5. Handle section categories (optional)
-        if (accountRequest.getSectionCategoryIds() != null &&
-                !accountRequest.getSectionCategoryIds().isEmpty()) {
+        if (accountRequest.getSectionCategoryIds() != null
+                && !accountRequest.getSectionCategoryIds().isEmpty()) {
 
             List<Long> sectionIds = accountRequest.getSectionCategoryIds();
 
@@ -171,9 +168,9 @@ private final PermissionRepository permissionRepository;
 
             Set<SectionCategory> sections = sectionIds.stream()
                     .map(id -> sectionCategoryRepository.findById(id)
-                            .orElseThrow(() -> new IllegalStateException(
-                                    "SectionCategory disappeared during validation: " + id
-                            )))
+                    .orElseThrow(() -> new IllegalStateException(
+                    "SectionCategory disappeared during validation: " + id
+            )))
                     .collect(Collectors.toSet());
 
             account.setSectionCategories(sections);
@@ -195,9 +192,9 @@ private final PermissionRepository permissionRepository;
             // Load Permission objects
             Set<Permission> permissions = permissionIds.stream()
                     .map(id -> permissionRepository.findById(id)
-                            .orElseThrow(() -> new IllegalStateException(
-                                    "Permission disappeared during validation: " + id
-                            )))
+                    .orElseThrow(() -> new IllegalStateException(
+                    "Permission disappeared during validation: " + id
+            )))
                     .collect(Collectors.toSet());
 
             account.setPermissions(permissions);
@@ -211,7 +208,6 @@ private final PermissionRepository permissionRepository;
                 .body(AccountMapper.toDTO(savedAccount));
     }
 
-
     @PutMapping("/{id}")
     @Operation(summary = "Update account", description = "Update an existing account")
     @ApiResponses(value = {
@@ -220,7 +216,7 @@ private final PermissionRepository permissionRepository;
         @ApiResponse(responseCode = "400", description = "Invalid request data"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<AccountDTO> updateAccount(@PathVariable Long id, @RequestBody AccountRequest  accountRequest) {
+    public ResponseEntity<AccountDTO> updateAccount(@PathVariable Long id, @RequestBody AccountRequest accountRequest) {
         try {
             Optional<Account> existingAccount = accountRepository.findById(id);
             if (!existingAccount.isPresent() || !existingAccount.get().isActive()) {
@@ -285,7 +281,6 @@ private final PermissionRepository permissionRepository;
         }
     }
 
-
     @PutMapping("/{id}/sections")
     @Operation(summary = "Update user's section categories", description = "Replace all section categories for a user")
     public ResponseEntity<?> updateAccountSections(
@@ -330,7 +325,6 @@ private final PermissionRepository permissionRepository;
                     .body("Failed to update sections");
         }
     }
-
 
     @GetMapping("/{id}/sections")
     @Operation(summary = "Get user's section categories", description = "List all section categories assigned to a specific user")
@@ -396,7 +390,6 @@ private final PermissionRepository permissionRepository;
         }
     }
 
-
     @GetMapping("/permissions")
     @Operation(summary = "Get all permissions", description = "Retrieve all available permissions in the system")
     public ResponseEntity<?> getAllPermissions() {
@@ -423,11 +416,10 @@ private final PermissionRepository permissionRepository;
         }
     }
 
-
     @GetMapping("/{id}/blocks-permissions")
     public ResponseEntity<?> getUserBlocksWithPermissions(@PathVariable Long id) {
-        List<UserBlockPermissionProjection> projectionList =
-                accountRepository.findUserPermissionsByAccountId(id);
+        List<UserBlockPermissionProjection> projectionList
+                = accountRepository.findUserPermissionsByAccountId(id);
 
         // Group by Block
         Map<Long, Map<String, Object>> blocksMap = new HashMap<>();
@@ -453,13 +445,9 @@ private final PermissionRepository permissionRepository;
         return ResponseEntity.ok(blocksMap.values());
     }
 
-
     @PutMapping("/{id}/permissions")
     @Operation(summary = "Update user's permissions", description = "Replace all permissions for a user")
-    public ResponseEntity<?> updateAccountPermissions(
-            @PathVariable Long id,
-            @RequestBody List<Long> permissionIds
-    ) {
+    public ResponseEntity<?> updateAccountPermissions(@PathVariable Long id, @RequestBody List<Long> permissionIds) {
         try {
             Optional<Account> optionalAccount = accountRepository.findById(id);
             if (!optionalAccount.isPresent() || !optionalAccount.get().isActive()) {
@@ -494,13 +482,11 @@ private final PermissionRepository permissionRepository;
         }
     }
 
-
-
-
     // Simple DTO for request
     @Setter
     @Getter
     public static class AccountRequest {
+
         // Getters and Setters
         private String username;
         private String password;
@@ -513,8 +499,5 @@ private final PermissionRepository permissionRepository;
         private List<Long> sectionCategoryIds;
         private List<Long> permissionIds;
     }
-
-
-
 
 }
