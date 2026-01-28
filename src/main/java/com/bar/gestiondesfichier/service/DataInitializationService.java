@@ -60,13 +60,13 @@ public class DataInitializationService implements CommandLineRunner {
         AccountCategory userCategory = createCategoryIfNotExists("USER", "Regular User Category");
 
         // Create Default Accounts
-        createAccountIfNotExists("admin", "admin123", "admin@gestiondesfichier.com",
-                "System Administrator", "+1234567890", adminCategory);
+        createAccountIfNotExists("mamadou", "admin123", "mamadou@gestiondesfichier.com",
+                "Mamadou FALL", "+1234567890", adminCategory);
 
         createAccountIfNotExists("user", "user123", "user@gestiondesfichier.com", "Regular User", "+1234567892", userCategory);
 
         log.info("Default users created:");
-        log.info("- admin/admin123 (ADMIN)");
+        log.info("- mamadou/admin123 (ADMIN)");
         log.info("- user/user123 (USER)");
 
         // Seed MAGERWA company and link admin
@@ -87,8 +87,7 @@ public class DataInitializationService implements CommandLineRunner {
                 });
     }
 
-    private Account createAccountIfNotExists(String username, String password, String email,
-            String fullName, String phoneNumber, AccountCategory category) {
+    private Account createAccountIfNotExists(String username, String password, String email, String fullName, String phoneNumber, AccountCategory category) {
         return accountRepository.findByUsername(username)
                 .orElseGet(() -> {
                     // Encode password using BCrypt
@@ -186,13 +185,13 @@ public class DataInitializationService implements CommandLineRunner {
             // Find admin account by username using native query
             Account admin = null;
             try {
-                admin = accountRepository.findByUsernameNative("admin").orElse(null);
+                admin = accountRepository.findByUsernameNative("mamadou").orElse(null);
             } catch (Exception e) {
                 log.error("Error finding admin by username: {}", e.getMessage());
             }
 
             if (admin == null) {
-                log.error("✗ Admin account with username 'admin' not found in database.");
+                log.error("✗ Admin account with username 'mamadou' not found in database.");
                 log.error("  Please ensure the admin account is created before running this seeder.");
                 return;
             }
@@ -247,7 +246,7 @@ public class DataInitializationService implements CommandLineRunner {
                 log.info("✓ Admin account updated successfully:");
                 log.info("  - Username: {}", savedAdmin.getUsername());
                 log.info("  - Permissions: {}", savedAdmin.getPermissions().size());
-                
+
                 // Reload with location details to log them
                 try {
                     Account reloaded = accountRepository.findById(savedAdmin.getId()).orElse(null);

@@ -16,7 +16,11 @@ import java.util.Optional;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    @Query("SELECT a FROM Account a JOIN FETCH a.accountCategory WHERE a.username = :username")
+        @Query("SELECT a FROM Account a " +
+            "JOIN FETCH a.accountCategory " +
+            "LEFT JOIN FETCH a.permissions p " +
+            "LEFT JOIN FETCH p.block " +
+            "WHERE a.username = :username")
     Optional<Account> findByUsername(@Param("username") String username);
 
     @Query(value = """

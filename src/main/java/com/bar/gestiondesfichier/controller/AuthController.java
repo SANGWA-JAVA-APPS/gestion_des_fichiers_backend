@@ -95,6 +95,8 @@ public class AuthController {
                             refreshToken
                     );
 
+                        response.setPermissions(accountDTO.getPermissions());
+
                     return ResponseEntity.ok(response);
 
                 } else {

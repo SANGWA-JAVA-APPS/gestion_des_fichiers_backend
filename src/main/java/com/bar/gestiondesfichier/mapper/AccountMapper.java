@@ -94,7 +94,8 @@ public class AccountMapper {
         return new PermissionDTO(
                 permission.getId(),
                 permission.getName(),
-                permission.getCode()
+                permission.getCode(),
+                permission.getBlock() != null ? permission.getBlock().getName() : null
         );
     }
 }

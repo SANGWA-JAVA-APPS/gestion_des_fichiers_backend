@@ -1004,3 +1004,47 @@ java.lang.NullPointerException: Cannot invoke "org.springframework.security.cryp
 
 1. login with paul, paul the country and the flag will change
 2. 
+
+CONTINUATION OF SYSTEM DEV - ON 25th Jan 2025
+---------------------------------------------
+1. permissions codes should be removed on the permissions list
+2. save button is not visible on the permissions list
+3. there should be a "cancel button" on the permission registration modal
+4. when editing a user, the modal should not show all the users in the drop down list
+5. while editing a document and the system finds that the same dcuments already exists, the system should prompt a message asking of the User
+	whants to update the document or to replace.
+6. Hierarchy of the document should be displayed as tree.
+7. The "edit", "view" and "delete" on the data table should be replaced by icons.
+
+
+
+57. can you see where the default user is added, if so kindly change the name to Mamadou FALL, and the username to be mamadou
+58. sorry the user should remain the same, but the admin is the one that should change like that
+
+
+
+On 26th Jan 2026
+------------------
+59. can you see the top right side on the nav there is an abbreviation of the logged in user, kindly remove it
+60. In the sidebar there are some menu group, now in the one called  Locations, i want you to hide  the sub menu called  
+	"Section Management"
+61. also from the same menu group, change the "company" to "companies"
+62. also from the Accounts, menu group there is a menu that is called "Account Categories", it has a registration page
+	and i want to remove the delete on the table that list all the categories.
+63. On the Account categories registration page, there is a table which has the last column that has a header called "Actions",
+	i want to remove the whole column
+64. can you see the registration page of account , it has two tabs
+65. on the permissions page i want to reduce the font size of the users dropdown list
+66. on the sidebar there is a menu category called Locations, ca you see it ?
+67. On the permission page, i also want to divide the page into two equal parts (bootstrap) and the users dropdown list to be on 
+	the left and the permission list on the right.
+68. i want the height of the permission list to be 150px
+69. i also want the text inside the permission list not to be bold, ,just normal
+70. i want you to tell me the foot size os the users list on the permission list
+71. i want to centralize that font size in the global.scss
+72. i want the same size to be applied on the permission list text content
+73. on the permission section there is a checkbox  that should displayu "select all", but is displaying "common.selectAll"
+74. Make the "select all" reside in a label, so that ist is clickable
+75. In the Location menu group, please remove (comment the corresponding code) sidebar.sectionManagement
+76. can you see the menu items we have on the document menu group? please list them for me.
+79. can you see (using mcp) the permission table data? i want you to 

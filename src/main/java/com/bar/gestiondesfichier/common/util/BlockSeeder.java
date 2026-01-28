@@ -10,6 +10,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Component
 @RequiredArgsConstructor
 @Transactional
@@ -21,217 +24,224 @@ public class BlockSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        seedNormsBlock();
-        seedAssetLandBlock();
-        seedAssetEstateBlock();
-        seedAssetEquipmentBlock();
-        seedCertificatesLicensesBlock();
-        seedCompanyPoliciesBlock();
-        seedHsePoliciesBlock();
-        seedEthicsCompliancePoliciesBlock();
-        seedThirdPartyContractsBlock();
-        seedRisksBlock();
+                Map<String, Block> blocks = seedDocumentBlocks();
+                seedDocumentPermissions(blocks);
     }
 
-    private void seedNormsBlock() {
-        Block block = getOrCreateBlock(
-                "NORMS_LAWS_REGULATION",
-                "Norms, Laws and Regulations",
-                "Manage all norms, legal regulations, and compliance rules for the organization."
-        );
+    /**
+     * Seed the default blocks list for documents.
+     */
+    private Map<String, Block> seedDocumentBlocks() {
+        Map<String, Block> blocks = new LinkedHashMap<>();
 
-        createBasicCrudPermissions(block, "NORMS");
+        blocks.put("NORME_LOI", getOrCreateBlock(
+                "NORME_LOI",
+                "Norms, Laws and Regulation",
+                "Norms, laws and regulations documentation"
+        ));
 
-    }
-
-    private void seedAssetLandBlock() {
-        Block block = getOrCreateBlock(
+        blocks.put("ASSET_LAND", getOrCreateBlock(
                 "ASSET_LAND",
                 "Asset Land",
-                "Track land assets including titles, permits, concessions, and related documents."
-        );
+                "Land asset management and documentation"
+        ));
 
-        // Access to the Asset Land module
-        createPermissionIfNotExists(block, "ASSET_LAND_ACCESS",
-                "Access Asset Land Module",
-                "Allows access to all asset land related data and documents.");
-
-        // Titres Fonciers
-        createPermissionIfNotExists(block, "ASSET_LAND_TITRES_FONCIERS",
-                "Titres Fonciers",
-                "Manage land titles including description, reference, date of obtaining, GPS coordinates, location, status, and uploads.");
-
-        // Permis de Constructions
-        createPermissionIfNotExists(block, "ASSET_LAND_PERMIS_CONSTRUCTIONS",
-                "Permis de Constructions",
-                "Manage construction permits linked to land titles including reference, validation date, estimated work date, and status.");
-
-        // Décisions Fonciers
-        createPermissionIfNotExists(block, "ASSET_LAND_DECISIONS_FONCIERS",
-                "Décisions Fonciers",
-                "Track land decisions including reference to land title, location, GPS coordinates, and status.");
-
-        // Accord de Concession
-        createPermissionIfNotExists(block, "ASSET_LAND_ACCORD_CONCESSION",
-                "Accord de Concession",
-                "Manage concession agreements including contract details, location, GPS coordinates, management transfer report, start and end dates, and status.");
-
-        // Héritage / Legacy
-        createPermissionIfNotExists(block, "ASSET_LAND_HERITAGE_LEGACY",
-                "Héritage / Legacy",
-                "Track inherited land assets including description, location, GPS coordinates, comments, status, start and end dates.");
-    }
-
-
-    private void seedAssetEstateBlock() {
-        Block block = getOrCreateBlock(
+        blocks.put("ASSET_ESTATE", getOrCreateBlock(
                 "ASSET_ESTATE",
                 "Asset Estate",
-                "Manage estates such as houses, apartments, offices, yards, and related property documents."
-        );
+                "Estate asset management and documentation"
+        ));
 
-        createBasicCrudPermissions(block, "ESTATE");
-        createPermissionIfNotExists(block, "ASSET_ESTATE_ID",
-                "Estate ID",
-                "Manage estates including type (house, apartment, office, yard), reference, location, GPS coordinates, status, date of building, and comments.");
-    }
-
-    private void seedAssetEquipmentBlock() {
-        Block block = getOrCreateBlock(
+        blocks.put("ASSET_EQUIPMENT", getOrCreateBlock(
                 "ASSET_EQUIPMENT",
                 "Asset Equipment",
-                "Manage physical equipment, machinery, tools, and related asset documentation."
-        );
+                "Equipment asset management and documentation"
+        ));
 
-        createBasicCrudPermissions(block, "EQUIPMENT");
-        createPermissionIfNotExists(block, "ASSET_EQUIPMENT_ID",
-                "Equipment ID",
-                "Manage equipment including type (vehicle, forklift), serial number, plate number, equipment state, purchase date, technical inspection date, insurance, and associated documents (vehicle + registration).");
-    }
+        blocks.put("CERT_LICENSES", getOrCreateBlock(
+                "CERT_LICENSES",
+                "Certificates et Licences",
+                "Organizational certificates and licenses"
+        ));
 
-    private void seedCertificatesLicensesBlock() {
-        Block block = getOrCreateBlock(
-                "CERTIFICATES_LICENSES",
-                "Certificates & Licences",
-                "Manage all certificates, licenses, and official authorizations required by the organization."
-        );
-
-        createBasicCrudPermissions(block, "CERT_LICENSE");
-    }
-
-    private void seedCompanyPoliciesBlock() {
-        Block block = getOrCreateBlock(
+        blocks.put("COMPANY_POLICIES", getOrCreateBlock(
                 "COMPANY_POLICIES",
-                "Company Policies",
-                "Store and manage internal company policies, procedures, and governance documents."
-        );
+                "Companies Policies (Similar)",
+                "Company policies and procedures"
+        ));
 
-        createBasicCrudPermissions(block, "COMPANY_POLICY");
-
-        createPermissionIfNotExists(block, "COMPANY_POLICY", "Full Access to Company Policies", "Full access to all company policies");
-
-        createPermissionIfNotExists(block, "COMPANY_POLICY_FIN", "Financial Policies Access", "Full access to all Financial Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_PROC", "Procurement Policies Access", "Full access to all Procurement Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_HR", "HR Policies Access", "Full access to all HR Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_TECH", "Technical Maintenance Policies Access", "Full access to all Technical Maintenance Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_IT", "IT Policies Access", "Full access to all IT Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_RE", "Real Estate Policies Access", "Full access to all Real Estate Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_SH", "Shareholders Policies Access", "Full access to all Shareholders Policies");
-        createPermissionIfNotExists(block, "COMPANY_POLICY_LEGAL", "Legal Policies Access", "Full access to all Legal Policies");
-    }
-
-    private void seedHsePoliciesBlock() {
-        Block block = getOrCreateBlock(
+        blocks.put("HSE_POLICIES", getOrCreateBlock(
                 "HSE_POLICIES",
                 "HSE Policies",
-                "Health, Safety, and Environment policies and compliance documentation."
-        );
+                "Health, safety and environment policies"
+        ));
 
-        createBasicCrudPermissions(block, "HSE_POLICY");
-        // Category-specific permissions
-        createPermissionIfNotExists(block, "HSE_POLICY_QUALITY", "Quality Policies Access", "Full access to all Quality Policies");
-        createPermissionIfNotExists(block, "HSE_POLICY_HSE", "HSE Policies Access", "Full access to all HSE Policies");
-        createPermissionIfNotExists(block, "HSE_POLICY_EQUIP", "Equipment Policies Access", "Full access to all Equipment Policies");
-        createPermissionIfNotExists(block, "HSE_POLICY_DA", "Drug & Alcohol Policies Access", "Full access to all Drug & Alcohol Policies");
-        createPermissionIfNotExists(block, "HSE_POLICY_INDUCTION", "Induction Policies Access", "Full access to all Induction Policies");
-        createPermissionIfNotExists(block, "HSE_POLICY_INCIDENT", "Incident Newsletter Access", "Full access to all Incident Newsletters");
-        createPermissionIfNotExists(block, "HSE_POLICY_AUDIT", "Follow-up / Audit Reports Access", "Full access to all Audit Reports and Follow-ups");
-        createPermissionIfNotExists(block, "HSE_POLICY_SOP", "SOP (OPS) Access", "Full access to all SOP (OPS) Policies");
+        blocks.put("ETHICS_COMPLIANCE", getOrCreateBlock(
+                "ETHICS_COMPLIANCE",
+                "Ethics & Compliance",
+                "Ethics and compliance documentation"
+        ));
 
-    }
-
-    private void seedEthicsCompliancePoliciesBlock() {
-        Block block = getOrCreateBlock(
-                "ETHICS_COMPLIANCE_POLICIES",
-                "Ethics & Compliance Policies",
-                "Policies governing ethics, integrity, compliance, and regulatory obligations."
-        );
-
-        createBasicCrudPermissions(block, "ETHICS_POLICY");
-
-        createPermissionIfNotExists(block, "ETHICS_POLICY_CODE_OF_CONDUCT", "Code of Conduct Policies Access", "Full access to all Code of Conduct Policies");
-        createPermissionIfNotExists(block, "ETHICS_POLICY_AUDIT_REPORT", "Audit report / Follow-up Reports Access", "Full access to all Audit Reports and Follow-ups");
-        createPermissionIfNotExists(block, "ETHICS_POLICY_DUE_DILIGENCE", "Due Diligence Policies Access", "Full access to all Due Diligence Policies");
-    }
-
-    private void seedThirdPartyContractsBlock() {
-        Block block = getOrCreateBlock(
+        blocks.put("THIRD_PARTY_CONTRACTS", getOrCreateBlock(
                 "THIRD_PARTY_CONTRACTS",
                 "Third Party Contracts",
-                "Manage supplier, client, rental, and partner contracts and agreements."
-        );
+                "Third party contracts and agreements"
+        ));
 
-        createBasicCrudPermissions(block, "THIRD_PARTY_CONTRACT");
-
-        // Suppliers Contracts
-        createPermissionIfNotExists(block, "THIRD_PARTY_CONTRACTS_SUPPLIERS",
-                "Suppliers Contracts",
-                "Access to supplier contracts details.");
-
-        // Client / Commercial Contracts
-        createPermissionIfNotExists(block, "THIRD_PARTY_CONTRACTS_CLIENT",
-                "Client / Commercial Contracts",
-                "Access to client/commercial contracts.");
-
-        // Rental Assets Contracts
-        createPermissionIfNotExists(block, "THIRD_PARTY_CONTRACTS_RENTAL_CONTRACTS",
-                "Rental Assets Contracts",
-                "Access to rental assets contracts.");
-
-        // Rental Assets themselves
-        createPermissionIfNotExists(block, "THIRD_PARTY_CONTRACTS_RENTAL_ASSETS",
-                "Rental Assets",
-                "Access to rental assets details.");
-
-        // Cargo Damage Survey Agreements
-        createPermissionIfNotExists(block, "THIRD_PARTY_CONTRACTS_CARGO_SURVEY",
-                "Cargo Damage Survey Agreements",
-                "Access to cargo damage survey agreements.");
-    }
-
-    private void seedRisksBlock() {
-        Block block = getOrCreateBlock(
+        blocks.put("RISKS", getOrCreateBlock(
                 "RISKS",
                 "Risks",
-                "Identify, track, and manage operational, legal, financial, and compliance risks."
-        );
+                "Risk management documentation"
+        ));
 
-        createBasicCrudPermissions(block, "RISK");
-        // Litigation follow up
-        createPermissionIfNotExists(block, "RISKS_LITIGATION",
-                "Litigation Follow Up",
-                "Access and track litigation follow-ups including creation date, concern, status, expected completion, and risk value with configurable alerts and weekly reminders.");
-
-        // Insurance follow up
-        createPermissionIfNotExists(block, "RISKS_INSURANCE",
-                "Insurance Follow Up",
-                "Access and manage insurance follow-ups including concerns, coverage, values, validity dates, renewal dates, and asset status.");
-
-        // Third party claims
-        createPermissionIfNotExists(block, "RISKS_THIRD_PARTY_CLAIMS",
-                "Third Party Claims",
-                "Access and manage third party claims including reference, description, claim date, department in charge, status, and attached documents.");
+        return blocks;
     }
+
+    /**
+     * Seed permissions matching the Document menu group items in the frontend.
+     * For now, all permissions are assigned to the provided block.
+     */
+    private void seedDocumentPermissions(Map<String, Block> blocks) {
+        Block defaultBlock = blocks.values().stream().findFirst().orElse(null);
+        if (defaultBlock == null) {
+            return;
+        }
+
+        // 1. Section Category
+        createPermissionIfNotExists(defaultBlock, "SECTION_CATEGORY",
+                "Section Category",
+                "Manage section categories for document organization");
+
+        // 2. Norms and Laws
+        createPermissionIfNotExists(resolveBlock(blocks, "NORME_LOI", defaultBlock), "NORME_LOI",
+                "Norms and Laws",
+                "Access to norms, laws and regulations documentation");
+
+        // 3. Asset Land
+        createPermissionIfNotExists(resolveBlock(blocks, "ASSET_LAND", defaultBlock), "COMM_ASSET_LAND",
+                "Asset Land",
+                "Access to land asset management and documentation");
+
+        // 4. Construction Permits
+        createPermissionIfNotExists(resolveBlock(blocks, "ASSET_LAND", defaultBlock), "PERMI_CONSTRUCTION",
+                "Construction Permits",
+                "Manage construction permits and related documents");
+
+        // 5. Concession Agreement
+        createPermissionIfNotExists(resolveBlock(blocks, "ASSET_LAND", defaultBlock), "ACCORD_CONCESSION",
+                "Concession Agreement",
+                "Access to concession agreements and contracts");
+
+        // 6. Estate
+        createPermissionIfNotExists(resolveBlock(blocks, "ASSET_ESTATE", defaultBlock), "ESTATE",
+                "Estate",
+                "Manage estate properties and related documentation");
+
+        // 7. Certificates & Licenses
+        createPermissionIfNotExists(resolveBlock(blocks, "CERT_LICENSES", defaultBlock), "CERT_LICENSES",
+                "Certificates & Licenses",
+                "Access to organizational certificates and licenses");
+
+        // 8. Cargo Damage
+        createPermissionIfNotExists(resolveBlock(blocks, "THIRD_PARTY_CONTRACTS", defaultBlock), "CARGO_DAMAGE",
+                "Cargo Damage",
+                "Manage cargo damage surveys and agreements");
+
+        // 9. Financial Policies (ORG_FIN)
+        createPermissionIfNotExists(resolveBlock(blocks, "COMPANY_POLICIES", defaultBlock), "DOC_FINANCIAL",
+                "Financial Policies",
+                "Access to financial policies and procedures");
+
+        // 10. Procurement Policies (ORG_PROC)
+        createPermissionIfNotExists(resolveBlock(blocks, "COMPANY_POLICIES", defaultBlock), "DOC_PROCUREMENT",
+                "Procurement Policies",
+                "Access to procurement policies and procedures");
+
+        // 11. HR Policies (ORG_HR)
+        createPermissionIfNotExists(resolveBlock(blocks, "COMPANY_POLICIES", defaultBlock), "DOC_HR",
+                "HR Policies",
+                "Access to human resources policies and procedures");
+
+        // 12. Technical Policies (ORG_TECH)
+        createPermissionIfNotExists(resolveBlock(blocks, "COMPANY_POLICIES", defaultBlock), "DOC_TECHNICAL",
+                "Technical Policies",
+                "Access to technical maintenance policies");
+
+        // 13. IT Policies (ORG_IT)
+        createPermissionIfNotExists(resolveBlock(blocks, "COMPANY_POLICIES", defaultBlock), "DOC_IT",
+                "IT Policies",
+                "Access to IT policies and procedures");
+
+        // 14. Real Estate Policies (ORG_RE)
+        createPermissionIfNotExists(resolveBlock(blocks, "COMPANY_POLICIES", defaultBlock), "DOC_REAL_ESTATE",
+                "Real Estate Policies",
+                "Access to real estate policies and procedures");
+
+        // 15. Shareholders Policies (ORG_SH)
+        createPermissionIfNotExists(resolveBlock(blocks, "COMPANY_POLICIES", defaultBlock), "DOC_SHAREHOLDERS",
+                "Shareholders Policies",
+                "Access to shareholders policies and procedures");
+
+        // 16. Legal Policies (ORG_LEGAL)
+        createPermissionIfNotExists(resolveBlock(blocks, "COMPANY_POLICIES", defaultBlock), "DOC_LEGAL",
+                "Legal Policies",
+                "Access to legal policies and procedures");
+
+        // 17. Quality Policies (ORG_QUAL)
+        createPermissionIfNotExists(resolveBlock(blocks, "HSE_POLICIES", defaultBlock), "DOC_QUALITY",
+                "Quality Policies",
+                "Access to quality management policies");
+
+        // 18. HSE Policies (ORG_HSE)
+        createPermissionIfNotExists(resolveBlock(blocks, "HSE_POLICIES", defaultBlock), "DOC_HSE",
+                "HSE Policies",
+                "Access to health, safety and environment policies");
+
+        // 19. Equipment Policies (ORG_EQUIP)
+        createPermissionIfNotExists(resolveBlock(blocks, "HSE_POLICIES", defaultBlock), "DOC_EQUIPMENT",
+                "Equipment Policies",
+                "Access to equipment management policies");
+
+        // 20. Drug & Alcohol Policies (ORG_DA)
+        createPermissionIfNotExists(resolveBlock(blocks, "HSE_POLICIES", defaultBlock), "DOC_DRUG_ALCOHOL",
+                "Drug & Alcohol Policies",
+                "Access to drug and alcohol policies");
+
+        // 21. Incident Policies (ORG_INC)
+        createPermissionIfNotExists(resolveBlock(blocks, "HSE_POLICIES", defaultBlock), "DOC_INCIDENT",
+                "Incident Newsletters",
+                "Access to incident reports and newsletters");
+
+        // 22. SOP Policies (ORG_SOP)
+        createPermissionIfNotExists(resolveBlock(blocks, "HSE_POLICIES", defaultBlock), "DOC_SOP",
+                "Standard Operating Procedures",
+                "Access to standard operating procedures");
+
+        // 23. Suppliers Contracts (ORG_SUPP)
+        createPermissionIfNotExists(resolveBlock(blocks, "THIRD_PARTY_CONTRACTS", defaultBlock), "DOC_SUPPLIERS",
+                "Suppliers Contracts",
+                "Access to supplier contracts and agreements");
+
+        // 24. Rental Assets Contracts (ORG_RENT_CON)
+        createPermissionIfNotExists(resolveBlock(blocks, "THIRD_PARTY_CONTRACTS", defaultBlock), "DOC_RENTAL_CONTRACTS",
+                "Rental Assets Contracts",
+                "Access to rental asset contracts");
+
+        // 25. Client Commercial (ORG_CLIENT)
+        createPermissionIfNotExists(resolveBlock(blocks, "THIRD_PARTY_CONTRACTS", defaultBlock), "DOC_CLIENT_COMMERCIAL",
+                "Client Commercial Contracts",
+                "Access to client and commercial contracts");
+
+        // 26. Rental Assets (ORG_RENT_ASSET)
+                createPermissionIfNotExists(resolveBlock(blocks, "THIRD_PARTY_CONTRACTS", defaultBlock), "DOC_RENTAL_ASSETS",
+                "Rental Assets",
+                "Access to rental assets management");
+    }
+
+        private Block resolveBlock(Map<String, Block> blocks, String key, Block fallback) {
+                Block block = blocks.get(key);
+                return block != null ? block : fallback;
+        }
 
     private Block getOrCreateBlock(String code, String name, String description) {
         return blockRepository.findByBlockCode(code)
@@ -241,6 +251,7 @@ public class BlockSeeder implements CommandLineRunner {
                     block.setName(name);
                     block.setDescription(description);
                     return blockRepository.save(block);
+
                 });
     }
 
@@ -255,16 +266,4 @@ public class BlockSeeder implements CommandLineRunner {
         }
     }
 
-    private void createBasicCrudPermissions(Block block, String prefix) {
-//        createPermissionIfNotExists(block, prefix + "_VIEW", "View " + block.getName(), "View " + block.getName() + " records");
-//        createPermissionIfNotExists(block, prefix + "_CREATE", "Create " + block.getName(), "Create " + block.getName() + " records");
-//        createPermissionIfNotExists(block, prefix + "_UPDATE", "Update " + block.getName(), "Update " + block.getName() + " records");
-//        createPermissionIfNotExists(block, prefix + "_DELETE", "Delete " + block.getName(), "Delete " + block.getName() + " records");
-//        createPermissionIfNotExists(
-//                block,
-//                prefix + "_ALL",
-//                "Full Access to " + block.getName(),
-//                "Full access to all actions on " + block.getName()
-//        );
-    }
 }

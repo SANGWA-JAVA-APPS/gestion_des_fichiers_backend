@@ -1,7 +1,10 @@
 package com.bar.gestiondesfichier.dto;
 
+import com.bar.gestiondesfichier.document.dto.PermissionDTO;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Set;
 
 @Setter
 @Getter
@@ -11,6 +14,8 @@ public class LoginResponseDto {
     private String message;
 
     private AccountDTO account;   // FULL USER PROFILE (country + entity + role)
+
+    private Set<PermissionDTO> permissions;
 
     private String token;
     private String refreshToken;

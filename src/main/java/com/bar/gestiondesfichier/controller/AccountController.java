@@ -447,9 +447,35 @@ public class AccountController {
 
     @PutMapping("/{id}/permissions")
     @Operation(summary = "Update user's permissions", description = "Replace all permissions for a user")
-    public ResponseEntity<?> updateAccountPermissions(@PathVariable Long id, @RequestBody List<Long> permissionIds) {
+    public ResponseEntity<?> updateAccountPermissions(@PathVariable Long id, @RequestBody com.fasterxml.jackson.databind.JsonNode payload) {
         try {
-            Optional<Account> optionalAccount = accountRepository.findById(id);
+            Long resolvedAccountId = id;
+            List<Long> permissionIds = new ArrayList<>();
+
+            if (payload != null && payload.isArray()) {
+                for (var node : payload) {
+                    if (node != null && node.canConvertToLong()) {
+                        permissionIds.add(node.asLong());
+                    }
+                }
+            } else if (payload != null && payload.isObject()) {
+                if (payload.hasNonNull("accountId") && payload.get("accountId").canConvertToLong()) {
+                    resolvedAccountId = payload.get("accountId").asLong();
+                }
+                if (payload.hasNonNull("permissionIds") && payload.get("permissionIds").isArray()) {
+                    for (var node : payload.get("permissionIds")) {
+                        if (node != null && node.canConvertToLong()) {
+                            permissionIds.add(node.asLong());
+                        }
+                    }
+                }
+            }
+
+            if (!resolvedAccountId.equals(id)) {
+                return ResponseEntity.badRequest().body("Account ID mismatch between path and payload");
+            }
+
+            Optional<Account> optionalAccount = accountRepository.findById(resolvedAccountId);
             if (!optionalAccount.isPresent() || !optionalAccount.get().isActive()) {
                 return ResponseEntity.notFound().build();
             }
@@ -457,7 +483,7 @@ public class AccountController {
             Account account = optionalAccount.get();
 
             // Validate all permission IDs exist
-            List<Long> invalidIds = permissionIds.stream()
+                List<Long> invalidIds = permissionIds.stream()
                     .filter(pid -> !permissionRepository.existsById(pid))
                     .toList();
 
