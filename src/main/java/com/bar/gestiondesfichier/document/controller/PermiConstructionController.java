@@ -317,74 +317,62 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
 
             PermiConstruction existing = existingOpt.get();
 
-            // ========================
-            // 1️⃣ UPDATE SIMPLE FIELDS
-            // ========================
-            if (permiConstruction.getNumeroPermis() != null)
-                existing.setNumeroPermis(permiConstruction.getNumeroPermis());
-
-            if (permiConstruction.getProjet() != null)
-                existing.setProjet(permiConstruction.getProjet());
-
-            if (permiConstruction.getLocalisation() != null)
-                existing.setLocalisation(permiConstruction.getLocalisation());
-
-            if (permiConstruction.getRefPermisConstuire() != null)
-                existing.setRefPermisConstuire(permiConstruction.getRefPermisConstuire());
-
-            if (permiConstruction.getRefPermisConstuire() != null)
-                existing.setRefPermisConstuire(permiConstruction.getRefPermisConstuire());
-
-            if (permiConstruction.getReferenceTitreFoncier() != null)
-                existing.setReferenceTitreFoncier(permiConstruction.getReferenceTitreFoncier());
-
-            if (permiConstruction.getAutoriteDelivrance() != null)
-                existing.setAutoriteDelivrance(permiConstruction.getAutoriteDelivrance());
-
-            if (permiConstruction.getDateDelivrance() != null)
-                existing.setDateDelivrance(permiConstruction.getDateDelivrance());
-
-            if (permiConstruction.getDateExpiration() != null)
-                existing.setDateExpiration(permiConstruction.getDateExpiration());
-
-            if (permiConstruction.getDateValidation() != null)
-                existing.setDateValidation(permiConstruction.getDateValidation());
-
-            if (permiConstruction.getDateEstimeeTravaux() != null)
-                existing.setDateEstimeeTravaux(permiConstruction.getDateEstimeeTravaux());
-
-            // ========================
-            // 2️⃣ UPDATE NESTED ENTITIES BY ID
-            // ========================
-
-            // doneBy
-            if (permiConstruction.getDoneBy() != null && permiConstruction.getDoneBy().getId() != null) {
-                Account user = accountRepository.findById(permiConstruction.getDoneBy().getId())
-                        .orElseThrow(() -> new RuntimeException("User not found with ID: " + permiConstruction.getDoneBy().getId()));
-                existing.setDoneBy(user);
-            }
-
-            // status
-            if (permiConstruction.getStatus() != null && permiConstruction.getStatus().getId() != null) {
-                DocStatus status = docStatusRepository.findById(permiConstruction.getStatus().getId())
-                        .orElseThrow(() -> new RuntimeException("Status not found with ID: " + permiConstruction.getStatus().getId()));
-                existing.setStatus(status);
-            }
-
-            // sectionCategory
-            if (permiConstruction.getSectionCategory() != null && permiConstruction.getSectionCategory().getId() != null) {
-                SectionCategory section = sectionCategoryRepository.findById(permiConstruction.getSectionCategory().getId())
-                        .orElseThrow(() -> new RuntimeException("Section category not found with ID: " + permiConstruction.getSectionCategory().getId()));
-                existing.setSectionCategory(section);
-            }
-
-            // ========================
-            // 3️⃣ NEVER TOUCH DOCUMENT
-            // ========================
+            applyPermiConstructionUpdates(existing, permiConstruction);
 
             PermiConstruction saved = permiConstructionRepository.save(existing);
             return ResponseUtil.success(saved, "Construction permit updated successfully");
 
+        } catch (Exception e) {
+            log.error("Error updating construction permit with ID: {}", id, e);
+            return ResponseUtil.badRequest("Failed to update construction permit: " + e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @Operation(summary = "Update construction permit with file", description = "Update an existing construction permit record with optional file upload")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Construction permit updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Construction permit not found or invalid data")
+    })
+    public ResponseEntity<Map<String, Object>> updatePermiConstructionWithFile(
+            @PathVariable Long id,
+            @RequestPart("permiConstruction") PermiConstruction permiConstruction,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("Updating construction permit with file, ID: {}", id);
+
+            Optional<PermiConstruction> existingOpt = permiConstructionRepository.findByIdAndActiveTrue(id);
+            if (existingOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Construction permit not found with ID: " + id);
+            }
+
+            PermiConstruction existing = existingOpt.get();
+
+            applyPermiConstructionUpdates(existing, permiConstruction);
+
+                String message = "Construction permit updated successfully";
+
+                if (file != null && !file.isEmpty()) {
+                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+                String originalFileName = documentUploadService.generateOriginalFileName(
+                        "Permi_Construction",
+                        existing.getNumeroPermis(),
+                        extension
+                );
+
+                Document updatedDocument = documentUploadService
+                        .handleFileUpdate(existing.getDocument(), file, "permi_construction", originalFileName, existing.getDoneBy())
+                        .map(documentRepository::save)
+                        .orElse(null);
+
+                if (updatedDocument != null) {
+                    existing.setDocument(updatedDocument);
+                    message = "Construction permit updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                }
+            }
+
+            PermiConstruction saved = permiConstructionRepository.save(existing);
+            return ResponseUtil.success(saved, message);
         } catch (Exception e) {
             log.error("Error updating construction permit with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update construction permit: " + e.getMessage());
@@ -400,7 +388,6 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
     public ResponseEntity<Map<String, Object>> deletePermiConstruction(@PathVariable Long id) {
         try {
             log.info("Deleting construction permit with ID: {}", id);
-
             Optional<PermiConstruction> permiConstructionOpt = permiConstructionRepository.findByIdAndActiveTrue(id);
             if (permiConstructionOpt.isEmpty()) {
                 return ResponseUtil.badRequest("Construction permit not found with ID: " + id);
@@ -414,6 +401,60 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
         } catch (Exception e) {
             log.error("Error deleting construction permit with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to delete construction permit: " + e.getMessage());
+        }
+    }
+
+    private void applyPermiConstructionUpdates(PermiConstruction existing, PermiConstruction permiConstruction) {
+        if (permiConstruction == null) {
+            return;
+        }
+
+        if (permiConstruction.getNumeroPermis() != null)
+            existing.setNumeroPermis(permiConstruction.getNumeroPermis());
+
+        if (permiConstruction.getProjet() != null)
+            existing.setProjet(permiConstruction.getProjet());
+
+        if (permiConstruction.getLocalisation() != null)
+            existing.setLocalisation(permiConstruction.getLocalisation());
+
+        if (permiConstruction.getRefPermisConstuire() != null)
+            existing.setRefPermisConstuire(permiConstruction.getRefPermisConstuire());
+
+        if (permiConstruction.getReferenceTitreFoncier() != null)
+            existing.setReferenceTitreFoncier(permiConstruction.getReferenceTitreFoncier());
+
+        if (permiConstruction.getAutoriteDelivrance() != null)
+            existing.setAutoriteDelivrance(permiConstruction.getAutoriteDelivrance());
+
+        if (permiConstruction.getDateDelivrance() != null)
+            existing.setDateDelivrance(permiConstruction.getDateDelivrance());
+
+        if (permiConstruction.getDateExpiration() != null)
+            existing.setDateExpiration(permiConstruction.getDateExpiration());
+
+        if (permiConstruction.getDateValidation() != null)
+            existing.setDateValidation(permiConstruction.getDateValidation());
+
+        if (permiConstruction.getDateEstimeeTravaux() != null)
+            existing.setDateEstimeeTravaux(permiConstruction.getDateEstimeeTravaux());
+
+        if (permiConstruction.getDoneBy() != null && permiConstruction.getDoneBy().getId() != null) {
+            Account user = accountRepository.findById(permiConstruction.getDoneBy().getId())
+                    .orElseThrow(() -> new RuntimeException("User not found with ID: " + permiConstruction.getDoneBy().getId()));
+            existing.setDoneBy(user);
+        }
+
+        if (permiConstruction.getStatus() != null && permiConstruction.getStatus().getId() != null) {
+            DocStatus status = docStatusRepository.findById(permiConstruction.getStatus().getId())
+                    .orElseThrow(() -> new RuntimeException("Status not found with ID: " + permiConstruction.getStatus().getId()));
+            existing.setStatus(status);
+        }
+
+        if (permiConstruction.getSectionCategory() != null && permiConstruction.getSectionCategory().getId() != null) {
+            SectionCategory section = sectionCategoryRepository.findById(permiConstruction.getSectionCategory().getId())
+                    .orElseThrow(() -> new RuntimeException("Section category not found with ID: " + permiConstruction.getSectionCategory().getId()));
+            existing.setSectionCategory(section);
         }
     }
 

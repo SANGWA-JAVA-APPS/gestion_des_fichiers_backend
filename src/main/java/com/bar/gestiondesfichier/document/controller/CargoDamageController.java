@@ -233,26 +233,68 @@ public class CargoDamageController {
 
             CargoDamage existingCargoDamage = existingOpt.get();
 
-            if (cargoDamage.getRefeRequest() != null) {
-                existingCargoDamage.setRefeRequest(cargoDamage.getRefeRequest());
-            }
-            if (cargoDamage.getDescription() != null) {
-                existingCargoDamage.setDescription(cargoDamage.getDescription());
-            }
-            if (cargoDamage.getQuotationContractNum() != null) {
-                existingCargoDamage.setQuotationContractNum(cargoDamage.getQuotationContractNum());
-            }
-            if (cargoDamage.getDateRequest() != null) {
-                existingCargoDamage.setDateRequest(cargoDamage.getDateRequest());
-            }
-            if (cargoDamage.getDateContract() != null) {
-                existingCargoDamage.setDateContract(cargoDamage.getDateContract());
-            }
+            applyCargoDamageUpdates(existingCargoDamage, cargoDamage);
 
             CargoDamage updated = cargoDamageRepository.save(existingCargoDamage);
             log.info("Cargo damage record updated successfully with ID: {}", updated.getId());
 
             return ResponseUtil.success("Cargo damage record updated successfully");
+        } catch (Exception e) {
+            log.error("Error updating cargo damage record with ID: {}", id, e);
+            return ResponseUtil.badRequest(e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @Operation(summary = "Update cargo damage with file", description = "Update existing cargo damage record with optional file upload")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Cargo damage record updated successfully"),
+        @ApiResponse(responseCode = "404", description = "Cargo damage record not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "403", description = "Session expired")
+    })
+    public ResponseEntity<Map<String, Object>> updateCargoDamageWithFile(
+            @PathVariable Long id,
+            @RequestPart("cargoDamage") CargoDamage cargoDamage,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("Updating cargo damage with file, ID: {}", id);
+
+            Optional<CargoDamage> existingOpt = cargoDamageRepository.findByIdAndActiveTrue(id);
+            if (existingOpt.isEmpty()) {
+                log.warn("Cargo damage record not found with ID: {}", id);
+                return ResponseUtil.badRequest("Cargo damage record not found");
+            }
+
+            CargoDamage existingCargoDamage = existingOpt.get();
+
+            applyCargoDamageUpdates(existingCargoDamage, cargoDamage);
+
+                String message = "Cargo damage record updated successfully";
+
+                if (file != null && !file.isEmpty()) {
+                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+                String originalFileName = documentUploadService.generateOriginalFileName(
+                        "Cargo_Damage",
+                        existingCargoDamage.getRefeRequest(),
+                        extension
+                );
+
+                Document updatedDocument = documentUploadService
+                        .handleFileUpdate(existingCargoDamage.getDocument(), file, "cargo_damage", originalFileName, existingCargoDamage.getDoneBy())
+                        .map(documentRepository::save)
+                        .orElse(null);
+
+                if (updatedDocument != null) {
+                    existingCargoDamage.setDocument(updatedDocument);
+                    message = "Cargo damage record updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                }
+            }
+
+            CargoDamage updated = cargoDamageRepository.save(existingCargoDamage);
+            log.info("Cargo damage record updated successfully with ID: {}", updated.getId());
+
+            return ResponseUtil.success(message);
         } catch (Exception e) {
             log.error("Error updating cargo damage record with ID: {}", id, e);
             return ResponseUtil.badRequest(e.getMessage());
@@ -282,6 +324,28 @@ public class CargoDamageController {
         } catch (Exception e) {
             log.error("Error deleting cargo damage with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to delete cargo damage: " + e.getMessage());
+        }
+    }
+
+    private void applyCargoDamageUpdates(CargoDamage existingCargoDamage, CargoDamage cargoDamage) {
+        if (cargoDamage == null) {
+            return;
+        }
+
+        if (cargoDamage.getRefeRequest() != null) {
+            existingCargoDamage.setRefeRequest(cargoDamage.getRefeRequest());
+        }
+        if (cargoDamage.getDescription() != null) {
+            existingCargoDamage.setDescription(cargoDamage.getDescription());
+        }
+        if (cargoDamage.getQuotationContractNum() != null) {
+            existingCargoDamage.setQuotationContractNum(cargoDamage.getQuotationContractNum());
+        }
+        if (cargoDamage.getDateRequest() != null) {
+            existingCargoDamage.setDateRequest(cargoDamage.getDateRequest());
+        }
+        if (cargoDamage.getDateContract() != null) {
+            existingCargoDamage.setDateContract(cargoDamage.getDateContract());
         }
     }
 

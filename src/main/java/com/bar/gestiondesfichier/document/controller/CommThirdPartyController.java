@@ -191,18 +191,20 @@ public class CommThirdPartyController {
             }
 
             // Handle optional file upload
+            String message = "Commercial third party updated successfully";
             if (file != null && !file.isEmpty()) {
-                String folder = "comm_third_party";
-                String filePath = documentUploadService.uploadFile(file, folder);
                 String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
                 String originalFileName = documentUploadService.generateOriginalFileName("CommThirdParty", existing.getName(), extension);
 
-                Document document = documentUploadService.initializeDocument(
-                        file.getOriginalFilename(), originalFileName,
-                        file.getContentType(), file.getSize(), filePath, account
-                );
-                documentRepository.save(document);
-                existing.setDocument(document);
+                Document updatedDocument = documentUploadService
+                        .handleFileUpdate(existing.getDocument(), file, "comm_third_party", originalFileName, account)
+                        .map(documentRepository::save)
+                        .orElse(null);
+
+                if (updatedDocument != null) {
+                    existing.setDocument(updatedDocument);
+                    message = "Commercial third party updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                }
             }
 
             // Track who updated the entity
@@ -210,7 +212,7 @@ public class CommThirdPartyController {
 
             // Save updates
             CommThirdParty saved = commThirdPartyRepository.save(existing);
-            return ResponseUtil.success(saved, "Commercial third party updated successfully");
+            return ResponseUtil.success(saved, message);
 
         } catch (Exception e) {
             log.error("Error updating commercial third party with ID: {}", id, e);

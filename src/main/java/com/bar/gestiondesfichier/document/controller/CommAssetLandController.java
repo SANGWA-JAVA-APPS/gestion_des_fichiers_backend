@@ -233,31 +233,61 @@ public class CommAssetLandController {
 
             CommAssetLand existingCommAssetLand = existingCommAssetLandOpt.get();
 
-            // Update fields
-            if (commAssetLand.getReference() != null) {
-                existingCommAssetLand.setReference(commAssetLand.getReference());
-            }
-            if (commAssetLand.getDescription() != null) {
-                existingCommAssetLand.setDescription(commAssetLand.getDescription());
-            }
-            if (commAssetLand.getEmplacement() != null) {
-                existingCommAssetLand.setEmplacement(commAssetLand.getEmplacement());
-            }
-            if (commAssetLand.getCoordonneesGps() != null) {
-                existingCommAssetLand.setCoordonneesGps(commAssetLand.getCoordonneesGps());
-            }
-            if (commAssetLand.getDateObtention() != null) {
-                existingCommAssetLand.setDateObtention(commAssetLand.getDateObtention());
-            }
-            if (commAssetLand.getSection() != null) {
-                existingCommAssetLand.setSection(commAssetLand.getSection());
-            }
-            if (commAssetLand.getStatus() != null) {
-                existingCommAssetLand.setStatus(commAssetLand.getStatus());
-            }
+            applyCommAssetLandUpdates(existingCommAssetLand, commAssetLand);
 
             CommAssetLand savedCommAssetLand = commAssetLandRepository.save(existingCommAssetLand);
             return ResponseUtil.success(savedCommAssetLand, "Commercial asset land updated successfully");
+        } catch (Exception e) {
+            log.error("Error updating commercial asset land with ID: {}", id, e);
+            return ResponseUtil.badRequest("Failed to update commercial asset land: " + e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @Operation(summary = "Update commercial asset land with file", description = "Update an existing commercial asset land record with optional file upload")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Commercial asset land updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Commercial asset land not found or invalid data")
+    })
+    public ResponseEntity<Map<String, Object>> updateCommAssetLandWithFile(
+            @PathVariable Long id,
+            @RequestPart("commAssetLand") CommAssetLand commAssetLand,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("Updating commercial asset land with file, ID: {}", id);
+
+            Optional<CommAssetLand> existingCommAssetLandOpt = commAssetLandRepository.findByIdAndActiveTrue(id);
+            if (existingCommAssetLandOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Commercial asset land not found with ID: " + id);
+            }
+
+            CommAssetLand existingCommAssetLand = existingCommAssetLandOpt.get();
+
+            applyCommAssetLandUpdates(existingCommAssetLand, commAssetLand);
+
+                String message = "Commercial asset land updated successfully";
+
+                if (file != null && !file.isEmpty()) {
+                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+                String originalFileName = documentUploadService.generateOriginalFileName(
+                        "Comm_Asset_Land",
+                        existingCommAssetLand.getReference(),
+                        extension
+                );
+
+                Document updatedDocument = documentUploadService
+                        .handleFileUpdate(existingCommAssetLand.getDocument(), file, "comm_asset_land", originalFileName, existingCommAssetLand.getDoneBy())
+                        .map(documentRepository::save)
+                        .orElse(null);
+
+                if (updatedDocument != null) {
+                    existingCommAssetLand.setDocument(updatedDocument);
+                    message = "Commercial asset land updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                }
+            }
+
+            CommAssetLand savedCommAssetLand = commAssetLandRepository.save(existingCommAssetLand);
+            return ResponseUtil.success(savedCommAssetLand, message);
         } catch (Exception e) {
             log.error("Error updating commercial asset land with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update commercial asset land: " + e.getMessage());
@@ -311,6 +341,34 @@ public class CommAssetLandController {
         } catch (Exception e) {
             log.error("Error retrieving commercial asset lands by section category: {}", sectionCategoryId, e);
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    private void applyCommAssetLandUpdates(CommAssetLand existingCommAssetLand, CommAssetLand commAssetLand) {
+        if (commAssetLand == null) {
+            return;
+        }
+
+        if (commAssetLand.getReference() != null) {
+            existingCommAssetLand.setReference(commAssetLand.getReference());
+        }
+        if (commAssetLand.getDescription() != null) {
+            existingCommAssetLand.setDescription(commAssetLand.getDescription());
+        }
+        if (commAssetLand.getEmplacement() != null) {
+            existingCommAssetLand.setEmplacement(commAssetLand.getEmplacement());
+        }
+        if (commAssetLand.getCoordonneesGps() != null) {
+            existingCommAssetLand.setCoordonneesGps(commAssetLand.getCoordonneesGps());
+        }
+        if (commAssetLand.getDateObtention() != null) {
+            existingCommAssetLand.setDateObtention(commAssetLand.getDateObtention());
+        }
+        if (commAssetLand.getSection() != null) {
+            existingCommAssetLand.setSection(commAssetLand.getSection());
+        }
+        if (commAssetLand.getStatus() != null) {
+            existingCommAssetLand.setStatus(commAssetLand.getStatus());
         }
     }
 }

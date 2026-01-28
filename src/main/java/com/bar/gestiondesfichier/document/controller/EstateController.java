@@ -241,32 +241,62 @@ private final CurrentUser currentUser;
             }
             
             Estate existingEstate = existingEstateOpt.get();
-            
-            // Update fields
-            if (estate.getReference() != null) {
-                existingEstate.setReference(estate.getReference());
-            }
-            if (estate.getEstateType() != null) {
-                existingEstate.setEstateType(estate.getEstateType());
-            }
-            if (estate.getEmplacement() != null) {
-                existingEstate.setEmplacement(estate.getEmplacement());
-            }
-            if (estate.getCoordonneesGps() != null) {
-                existingEstate.setCoordonneesGps(estate.getCoordonneesGps());
-            }
-            if (estate.getDateOfBuilding() != null) {
-                existingEstate.setDateOfBuilding(estate.getDateOfBuilding());
-            }
-            if (estate.getComments() != null) {
-                existingEstate.setComments(estate.getComments());
-            }
-            if (estate.getStatus() != null) {
-                existingEstate.setStatus(estate.getStatus());
-            }
+
+            applyEstateUpdates(existingEstate, estate);
             
             Estate savedEstate = estateRepository.save(existingEstate);
             return ResponseUtil.success(savedEstate, "Estate updated successfully");
+        } catch (Exception e) {
+            log.error("Error updating estate with ID: {}", id, e);
+            return ResponseUtil.badRequest("Failed to update estate: " + e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @Operation(summary = "Update estate with file", description = "Update an existing estate record with optional file upload")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Estate updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Estate not found or invalid data")
+    })
+    public ResponseEntity<Map<String, Object>> updateEstateWithFile(
+            @PathVariable Long id,
+            @RequestPart("estate") Estate estate,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("Updating estate with file, ID: {}", id);
+
+            Optional<Estate> existingEstateOpt = estateRepository.findByIdAndActiveTrue(id);
+            if (existingEstateOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Estate not found with ID: " + id);
+            }
+
+            Estate existingEstate = existingEstateOpt.get();
+
+            applyEstateUpdates(existingEstate, estate);
+
+                String message = "Estate updated successfully";
+
+                if (file != null && !file.isEmpty()) {
+                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+                String originalFileName = documentUploadService.generateOriginalFileName(
+                        "Estate",
+                        existingEstate.getReference(),
+                        extension
+                );
+
+                Document updatedDocument = documentUploadService
+                        .handleFileUpdate(existingEstate.getDocument(), file, "estate", originalFileName, existingEstate.getDoneBy())
+                        .map(documentRepository::save)
+                        .orElse(null);
+
+                if (updatedDocument != null) {
+                    existingEstate.setDocument(updatedDocument);
+                    message = "Estate updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                }
+            }
+
+            Estate savedEstate = estateRepository.save(existingEstate);
+            return ResponseUtil.success(savedEstate, message);
         } catch (Exception e) {
             log.error("Error updating estate with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update estate: " + e.getMessage());
@@ -296,6 +326,34 @@ private final CurrentUser currentUser;
         } catch (Exception e) {
             log.error("Error deleting estate with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to delete estate: " + e.getMessage());
+        }
+    }
+
+    private void applyEstateUpdates(Estate existingEstate, Estate estate) {
+        if (estate == null) {
+            return;
+        }
+
+        if (estate.getReference() != null) {
+            existingEstate.setReference(estate.getReference());
+        }
+        if (estate.getEstateType() != null) {
+            existingEstate.setEstateType(estate.getEstateType());
+        }
+        if (estate.getEmplacement() != null) {
+            existingEstate.setEmplacement(estate.getEmplacement());
+        }
+        if (estate.getCoordonneesGps() != null) {
+            existingEstate.setCoordonneesGps(estate.getCoordonneesGps());
+        }
+        if (estate.getDateOfBuilding() != null) {
+            existingEstate.setDateOfBuilding(estate.getDateOfBuilding());
+        }
+        if (estate.getComments() != null) {
+            existingEstate.setComments(estate.getComments());
+        }
+        if (estate.getStatus() != null) {
+            existingEstate.setStatus(estate.getStatus());
         }
     }
 }

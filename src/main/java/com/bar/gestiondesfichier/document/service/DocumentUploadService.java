@@ -418,4 +418,55 @@ public class DocumentUploadService {
 
         return document;
     }
+
+    /**
+     * Update an existing document or create a new one from an uploaded file.
+     * Reuses core upload/versioning logic and increments version based on original file name.
+     *
+     * @param existingDocument The existing document to update (can be null)
+     * @param file The uploaded file
+     * @param folderName The upload folder name
+     * @param originalFileName The original file name used for version tracking
+     * @param owner The document owner (required when creating a new document)
+     * @return Optional containing the updated/created document when file is provided
+     * @throws IOException If file upload fails
+     */
+    public Optional<Document> handleFileUpdate(Document existingDocument, MultipartFile file, String folderName,
+                                               String originalFileName, Account owner) throws IOException {
+        if (file == null || file.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (originalFileName == null || originalFileName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Original file name is required for versioning");
+        }
+
+        if (existingDocument == null && owner == null) {
+            throw new IllegalArgumentException("Document owner is required");
+        }
+
+        String filePath = uploadFile(file, folderName);
+        String contentType = file.getContentType();
+        long fileSize = file.getSize();
+        String uniqueFileName = Paths.get(filePath).getFileName().toString();
+
+        Document document;
+        if (existingDocument == null) {
+            document = initializeDocument(uniqueFileName, originalFileName, contentType, fileSize, filePath, owner);
+        } else {
+            document = existingDocument;
+            document.setFileName(uniqueFileName);
+            document.setOriginalFileName(originalFileName);
+            document.setContentType(contentType);
+            document.setFileSize(fileSize);
+            document.setFilePath(filePath);
+            document.setVersion(getNextVersionForDocument(originalFileName));
+            if (document.getOwner() == null) {
+                document.setOwner(owner);
+            }
+            document.setActive(true);
+        }
+
+        return Optional.of(document);
+    }
 }

@@ -264,61 +264,61 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Concession agreement not found with ID: " + id));
 
-            // ---------- STRING FIELDS (normalized) ----------
-            if (accordConcession.getContratConcession() != null) {
-                existing.setContratConcession(trim(accordConcession.getContratConcession()));
-            }
-            if (accordConcession.getNumeroAccord() != null) {
-                existing.setNumeroAccord(trim(accordConcession.getNumeroAccord()));
-            }
-            if (accordConcession.getObjetConcession() != null) {
-                existing.setObjetConcession(trim(accordConcession.getObjetConcession()));
-            }
-            if (accordConcession.getConcessionnaire() != null) {
-                existing.setConcessionnaire(trim(accordConcession.getConcessionnaire()));
-            }
-            if (accordConcession.getConditionsFinancieres() != null) {
-                existing.setConditionsFinancieres(trim(accordConcession.getConditionsFinancieres()));
-            }
-            if (accordConcession.getEmplacement() != null) {
-                existing.setEmplacement(trim(accordConcession.getEmplacement()));
-            }
-            if (accordConcession.getCoordonneesGps() != null) {
-                existing.setCoordonneesGps(trim(accordConcession.getCoordonneesGps()));
-            }
-            if (accordConcession.getRapportTransfertGestion() != null) {
-                existing.setRapportTransfertGestion(trim(accordConcession.getRapportTransfertGestion()));
-            }
-
-            // ---------- NUMBERS ----------
-            if (accordConcession.getDureeAnnees() != null) {
-                existing.setDureeAnnees(accordConcession.getDureeAnnees());
-            }
-
-            // ---------- DATES ----------
-            if (accordConcession.getDateDebutConcession() != null) {
-                existing.setDateDebutConcession(accordConcession.getDateDebutConcession());
-            }
-            if (accordConcession.getDateFinConcession() != null) {
-                existing.setDateFinConcession(accordConcession.getDateFinConcession());
-            }
-
-            // ---------- RELATIONS ----------
-            if (accordConcession.getSectionCategory() != null &&
-                    accordConcession.getSectionCategory().getId() != null) {
-
-                existing.setSectionCategory(
-                        accordConcession.getSectionCategory()
-                );
-            }
-
-            if (accordConcession.getStatus() != null) {
-                existing.setStatus(accordConcession.getStatus());
-            }
+            applyAccordConcessionUpdates(existing, accordConcession);
 
             AccordConcession saved = accordConcessionRepository.save(existing);
             return ResponseUtil.success(saved, "Concession agreement updated successfully");
 
+        } catch (Exception e) {
+            log.error("Error updating concession agreement with ID: {}", id, e);
+            return ResponseUtil.badRequest("Failed to update concession agreement: " + e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @Transactional
+    @Operation(summary = "Update concession agreement with file", description = "Update an existing concession agreement record with optional file upload")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Concession agreement updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Concession agreement not found or invalid data")
+    })
+    public ResponseEntity<Map<String, Object>> updateAccordConcessionWithFile(
+            @PathVariable Long id,
+            @RequestPart("accordConcession") AccordConcession accordConcession,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("Updating concession agreement with file, ID: {}", id);
+
+            AccordConcession existing = accordConcessionRepository
+                    .findByIdAndActiveTrue(id)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Concession agreement not found with ID: " + id));
+
+            applyAccordConcessionUpdates(existing, accordConcession);
+
+                String message = "Concession agreement updated successfully";
+
+                if (file != null && !file.isEmpty()) {
+                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+                String originalFileName = documentUploadService.generateOriginalFileName(
+                        "Accord_Concession",
+                        existing.getNumeroAccord(),
+                        extension
+                );
+
+                Document updatedDocument = documentUploadService
+                        .handleFileUpdate(existing.getDocument(), file, "accord_concession", originalFileName, existing.getDoneBy())
+                        .map(documentRepository::save)
+                        .orElse(null);
+
+                if (updatedDocument != null) {
+                    existing.setDocument(updatedDocument);
+                    message = "Concession agreement updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                }
+            }
+
+            AccordConcession saved = accordConcessionRepository.save(existing);
+            return ResponseUtil.success(saved, message);
         } catch (Exception e) {
             log.error("Error updating concession agreement with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update concession agreement: " + e.getMessage());
@@ -353,6 +353,60 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
     }
     private String trim(String v) {
         return v == null ? null : v.trim();
+    }
+
+    private void applyAccordConcessionUpdates(AccordConcession existing, AccordConcession updates) {
+        if (updates == null) {
+            return;
+        }
+
+        // ---------- STRING FIELDS (normalized) ----------
+        if (updates.getContratConcession() != null) {
+            existing.setContratConcession(trim(updates.getContratConcession()));
+        }
+        if (updates.getNumeroAccord() != null) {
+            existing.setNumeroAccord(trim(updates.getNumeroAccord()));
+        }
+        if (updates.getObjetConcession() != null) {
+            existing.setObjetConcession(trim(updates.getObjetConcession()));
+        }
+        if (updates.getConcessionnaire() != null) {
+            existing.setConcessionnaire(trim(updates.getConcessionnaire()));
+        }
+        if (updates.getConditionsFinancieres() != null) {
+            existing.setConditionsFinancieres(trim(updates.getConditionsFinancieres()));
+        }
+        if (updates.getEmplacement() != null) {
+            existing.setEmplacement(trim(updates.getEmplacement()));
+        }
+        if (updates.getCoordonneesGps() != null) {
+            existing.setCoordonneesGps(trim(updates.getCoordonneesGps()));
+        }
+        if (updates.getRapportTransfertGestion() != null) {
+            existing.setRapportTransfertGestion(trim(updates.getRapportTransfertGestion()));
+        }
+
+        // ---------- NUMBERS ----------
+        if (updates.getDureeAnnees() != null) {
+            existing.setDureeAnnees(updates.getDureeAnnees());
+        }
+
+        // ---------- DATES ----------
+        if (updates.getDateDebutConcession() != null) {
+            existing.setDateDebutConcession(updates.getDateDebutConcession());
+        }
+        if (updates.getDateFinConcession() != null) {
+            existing.setDateFinConcession(updates.getDateFinConcession());
+        }
+
+        // ---------- RELATIONS ----------
+        if (updates.getSectionCategory() != null && updates.getSectionCategory().getId() != null) {
+            existing.setSectionCategory(updates.getSectionCategory());
+        }
+
+        if (updates.getStatus() != null) {
+            existing.setStatus(updates.getStatus());
+        }
     }
 
 }

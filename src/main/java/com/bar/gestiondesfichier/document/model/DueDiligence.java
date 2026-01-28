@@ -52,7 +52,7 @@ public class DueDiligence extends DocumentRelatedEntity {
     // Constructor with required fields
     public DueDiligence(Account doneBy, Document document, DocStatus status, String reference) {
         super(doneBy, document, status);
-        this.reference = reference;
+        this.reference = reference;//h
         this.creationDate = LocalDateTime.now();
     }
 }

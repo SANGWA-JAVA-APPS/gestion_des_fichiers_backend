@@ -249,29 +249,65 @@ private  final CurrentUser currentUser;
             }
             
             CertLicenses existingCertLicense = existingCertLicenseOpt.get();
-            
-            // Update fields
-            if (certLicense.getDescription() != null) {
-                existingCertLicense.setDescription(certLicense.getDescription());
-            }
-            if (certLicense.getAgentCertifica() != null) {
-                existingCertLicense.setAgentCertifica(certLicense.getAgentCertifica());
-            }
-            if (certLicense.getNumeroAgent() != null) {
-                existingCertLicense.setNumeroAgent(certLicense.getNumeroAgent());
-            }
-            if (certLicense.getDateCertificate() != null) {
-                existingCertLicense.setDateCertificate(certLicense.getDateCertificate());
-            }
-            if (certLicense.getDureeCertificat() != null) {
-                existingCertLicense.setDureeCertificat(certLicense.getDureeCertificat());
-            }
-            if (certLicense.getStatus() != null) {
-                existingCertLicense.setStatus(certLicense.getStatus());
-            }
+
+            applyCertLicenseUpdates(existingCertLicense, certLicense);
             
             CertLicenses savedCertLicense = certLicensesRepository.save(existingCertLicense);
             return ResponseUtil.success(savedCertLicense, "Certificate & license updated successfully");
+        } catch (Exception e) {
+            log.error("Error updating certificate & license with ID: {}", id, e);
+            return ResponseUtil.badRequest("Failed to update certificate & license: " + e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @Operation(summary = "Update certificate & license with file", description = "Update an existing certificate & license record with optional file upload")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Certificate & license updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Certificate & license not found or invalid data")
+    })
+    public ResponseEntity<Map<String, Object>> updateCertLicenseWithFile(
+            @PathVariable Long id,
+            @RequestPart("certLicense") CertLicenses certLicense,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("Updating certificate & license with file, ID: {}", id);
+
+            Optional<CertLicenses> existingCertLicenseOpt = certLicensesRepository.findByIdAndActiveTrue(id);
+            if (existingCertLicenseOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Certificate & license not found with ID: " + id);
+            }
+
+            CertLicenses existingCertLicense = existingCertLicenseOpt.get();
+
+            applyCertLicenseUpdates(existingCertLicense, certLicense);
+
+                String message = "Certificate & license updated successfully";
+
+                if (file != null && !file.isEmpty()) {
+                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+                String identifier = existingCertLicense.getId() != null
+                        ? existingCertLicense.getId().toString()
+                        : existingCertLicense.getDescription().replaceAll("[^a-zA-Z0-9]", "_");
+                String originalFileName = documentUploadService.generateOriginalFileName(
+                        "Cert_Licenses",
+                        identifier,
+                        extension
+                );
+
+                Document updatedDocument = documentUploadService
+                        .handleFileUpdate(existingCertLicense.getDocument(), file, "cert_licenses", originalFileName, existingCertLicense.getDoneBy())
+                        .map(documentRepository::save)
+                        .orElse(null);
+
+                if (updatedDocument != null) {
+                    existingCertLicense.setDocument(updatedDocument);
+                    message = "Certificate & license updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                }
+            }
+
+            CertLicenses savedCertLicense = certLicensesRepository.save(existingCertLicense);
+            return ResponseUtil.success(savedCertLicense, message);
         } catch (Exception e) {
             log.error("Error updating certificate & license with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update certificate & license: " + e.getMessage());
@@ -327,6 +363,31 @@ private  final CurrentUser currentUser;
         } catch (Exception e) {
             log.error("Error retrieving expiring certificates & licenses", e);
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    private void applyCertLicenseUpdates(CertLicenses existingCertLicense, CertLicenses certLicense) {
+        if (certLicense == null) {
+            return;
+        }
+
+        if (certLicense.getDescription() != null) {
+            existingCertLicense.setDescription(certLicense.getDescription());
+        }
+        if (certLicense.getAgentCertifica() != null) {
+            existingCertLicense.setAgentCertifica(certLicense.getAgentCertifica());
+        }
+        if (certLicense.getNumeroAgent() != null) {
+            existingCertLicense.setNumeroAgent(certLicense.getNumeroAgent());
+        }
+        if (certLicense.getDateCertificate() != null) {
+            existingCertLicense.setDateCertificate(certLicense.getDateCertificate());
+        }
+        if (certLicense.getDureeCertificat() != null) {
+            existingCertLicense.setDureeCertificat(certLicense.getDureeCertificat());
+        }
+        if (certLicense.getStatus() != null) {
+            existingCertLicense.setStatus(certLicense.getStatus());
         }
     }
 }

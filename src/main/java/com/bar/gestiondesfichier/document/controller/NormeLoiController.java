@@ -253,25 +253,61 @@ public class NormeLoiController {
 
             NormeLoi existingNormeLoi = existingNormeLoiOpt.get();
 
-            // Update fields
-            if (normeLoi.getReference() != null) {
-                existingNormeLoi.setReference(normeLoi.getReference());
-            }
-            if (normeLoi.getDescription() != null) {
-                existingNormeLoi.setDescription(normeLoi.getDescription());
-            }
-            if (normeLoi.getDateVigueur() != null) {
-                existingNormeLoi.setDateVigueur(normeLoi.getDateVigueur());
-            }
-            if (normeLoi.getDomaineApplication() != null) {
-                existingNormeLoi.setDomaineApplication(normeLoi.getDomaineApplication());
-            }
-            if (normeLoi.getStatus() != null) {
-                existingNormeLoi.setStatus(normeLoi.getStatus());
-            }
+            applyNormeLoiUpdates(existingNormeLoi, normeLoi);
 
             NormeLoi savedNormeLoi = normeLoiRepository.save(existingNormeLoi);
             return ResponseUtil.success(savedNormeLoi, "Norme loi updated successfully");
+        } catch (Exception e) {
+            log.error("Error updating norme loi with ID: {}", id, e);
+            return ResponseUtil.badRequest("Failed to update norme loi: " + e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @Operation(summary = "Update norme loi with file", description = "Update an existing norme loi record with optional file upload")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Norme loi updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Norme loi not found or invalid data")
+    })
+    public ResponseEntity<Map<String, Object>> updateNormeLoiWithFile(
+            @PathVariable Long id,
+            @RequestPart("normeLoi") NormeLoi normeLoi,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("Updating norme loi with file, ID: {}", id);
+
+            Optional<NormeLoi> existingNormeLoiOpt = normeLoiRepository.findByIdAndActiveTrue(id);
+            if (existingNormeLoiOpt.isEmpty()) {
+                return ResponseUtil.badRequest("Norme loi not found with ID: " + id);
+            }
+
+            NormeLoi existingNormeLoi = existingNormeLoiOpt.get();
+
+            applyNormeLoiUpdates(existingNormeLoi, normeLoi);
+
+                String message = "Norme loi updated successfully";
+
+                if (file != null && !file.isEmpty()) {
+                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+                String originalFileName = documentUploadService.generateOriginalFileName(
+                        file.getOriginalFilename(),
+                        existingNormeLoi.getReference(),
+                        extension
+                );
+
+                Document updatedDocument = documentUploadService
+                        .handleFileUpdate(existingNormeLoi.getDocument(), file, "norme_loi", originalFileName, existingNormeLoi.getDoneBy())
+                        .map(documentRepository::save)
+                        .orElse(null);
+
+                if (updatedDocument != null) {
+                    existingNormeLoi.setDocument(updatedDocument);
+                    message = "Norme loi updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                }
+            }
+
+            NormeLoi savedNormeLoi = normeLoiRepository.save(existingNormeLoi);
+            return ResponseUtil.success(savedNormeLoi, message);
         } catch (Exception e) {
             log.error("Error updating norme loi with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update norme loi: " + e.getMessage());
@@ -301,6 +337,28 @@ public class NormeLoiController {
         } catch (Exception e) {
             log.error("Error deleting norme loi with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to delete norme loi: " + e.getMessage());
+        }
+    }
+
+    private void applyNormeLoiUpdates(NormeLoi existingNormeLoi, NormeLoi normeLoi) {
+        if (normeLoi == null) {
+            return;
+        }
+
+        if (normeLoi.getReference() != null) {
+            existingNormeLoi.setReference(normeLoi.getReference());
+        }
+        if (normeLoi.getDescription() != null) {
+            existingNormeLoi.setDescription(normeLoi.getDescription());
+        }
+        if (normeLoi.getDateVigueur() != null) {
+            existingNormeLoi.setDateVigueur(normeLoi.getDateVigueur());
+        }
+        if (normeLoi.getDomaineApplication() != null) {
+            existingNormeLoi.setDomaineApplication(normeLoi.getDomaineApplication());
+        }
+        if (normeLoi.getStatus() != null) {
+            existingNormeLoi.setStatus(normeLoi.getStatus());
         }
     }
 }
