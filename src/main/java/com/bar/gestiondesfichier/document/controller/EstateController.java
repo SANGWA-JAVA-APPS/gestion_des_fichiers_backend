@@ -45,7 +45,8 @@ public class EstateController {
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
-private final CurrentUser currentUser;
+    private static final String DOCUMENT_FOLDER = "estate";
+    private final CurrentUser currentUser;
     public EstateController(EstateRepository estateRepository, DocumentUploadService documentUploadService, DocumentRepository documentRepository, AccountRepository accountRepository, CurrentUser currentUser) {
         this.estateRepository = estateRepository;
         this.documentUploadService = documentUploadService;
@@ -179,7 +180,7 @@ private final CurrentUser currentUser;
 
             // Upload file and get file path
             try {
-                filePath = documentUploadService.uploadFile(file, "estate");
+                filePath = documentUploadService.uploadFile(file,DOCUMENT_FOLDER);
 
                 // Extract information from uploaded file
                 contentType = file.getContentType();
@@ -190,8 +191,7 @@ private final CurrentUser currentUser;
                 uniqueFileName = Paths.get(filePath).getFileName().toString();
 
                 // Generate original filename
-                originalFileName = documentUploadService.generateOriginalFileName(
-                        "Estate",
+                originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(),
                         estate.getReference(),
                         fileExtension
                 );
@@ -279,13 +279,13 @@ private final CurrentUser currentUser;
                 if (file != null && !file.isEmpty()) {
                 String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
                 String originalFileName = documentUploadService.generateOriginalFileName(
-                        "Estate",
+                        file.getOriginalFilename(),
                         existingEstate.getReference(),
                         extension
                 );
 
                 Document updatedDocument = documentUploadService
-                        .handleFileUpdate(existingEstate.getDocument(), file, "estate", originalFileName, existingEstate.getDoneBy())
+                        .handleFileUpdate(existingEstate.getDocument(), file, DOCUMENT_FOLDER, originalFileName, existingEstate.getDoneBy())
                         .map(documentRepository::save)
                         .orElse(null);
 

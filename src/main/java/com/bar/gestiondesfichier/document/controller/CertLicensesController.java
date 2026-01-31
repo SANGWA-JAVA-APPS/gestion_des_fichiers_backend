@@ -44,6 +44,7 @@ public class CertLicensesController {
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
+    private static final String UPLOAD_FOLDER = "cert_licenses";
 private  final CurrentUser currentUser;
     public CertLicensesController(CertLicensesRepository certLicensesRepository,
                                   DocumentUploadService documentUploadService,
@@ -185,7 +186,7 @@ private  final CurrentUser currentUser;
 
             // Upload file and get file path
             try {
-                filePath = documentUploadService.uploadFile(file, "cert_licenses");
+                filePath = documentUploadService.uploadFile(file, UPLOAD_FOLDER);
 
                 // Extract information from uploaded file
                 contentType = file.getContentType();
@@ -199,7 +200,7 @@ private  final CurrentUser currentUser;
                 String identifier = certLicense.getId() != null ? certLicense.getId().toString() : 
                                   certLicense.getDescription().replaceAll("[^a-zA-Z0-9]", "_");
                 originalFileName = documentUploadService.generateOriginalFileName(
-                        "Cert_Licenses",
+                        file.getOriginalFilename(),
                         identifier,
                         fileExtension
                 );
@@ -290,13 +291,13 @@ private  final CurrentUser currentUser;
                         ? existingCertLicense.getId().toString()
                         : existingCertLicense.getDescription().replaceAll("[^a-zA-Z0-9]", "_");
                 String originalFileName = documentUploadService.generateOriginalFileName(
-                        "Cert_Licenses",
+                        file.getOriginalFilename(),
                         identifier,
                         extension
                 );
 
                 Document updatedDocument = documentUploadService
-                        .handleFileUpdate(existingCertLicense.getDocument(), file, "cert_licenses", originalFileName, existingCertLicense.getDoneBy())
+                        .handleFileUpdate(existingCertLicense.getDocument(), file, UPLOAD_FOLDER, originalFileName, existingCertLicense.getDoneBy())
                         .map(documentRepository::save)
                         .orElse(null);
 

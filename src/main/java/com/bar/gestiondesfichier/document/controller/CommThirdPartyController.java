@@ -37,7 +37,7 @@ public class CommThirdPartyController {
     private final DocumentUploadService documentUploadService;
     private final DocumentRepository documentRepository;
     private final CurrentUser currentUser;
-
+    private static final String UPLOAD_FOLDER = "comm_third_party";
     public CommThirdPartyController(
             CommThirdPartyRepository commThirdPartyRepository,
             SectionCategoryRepository sectionCategoryRepository,
@@ -132,10 +132,10 @@ public class CommThirdPartyController {
             }
 
             if (file != null && !file.isEmpty()) {
-                String folder = "comm_third_party";
-                String filePath = documentUploadService.uploadFile(file, folder);
+
+                String filePath = documentUploadService.uploadFile(file, UPLOAD_FOLDER);
                 String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
-                String originalFileName = documentUploadService.generateOriginalFileName("CommThirdParty", thirdParty.getName(), extension);
+                String originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(), thirdParty.getName(), extension);
 
                 Document document = documentUploadService.initializeDocument(
                         file.getOriginalFilename(), originalFileName,
@@ -146,7 +146,7 @@ public class CommThirdPartyController {
             }
 
             CommThirdParty saved = commThirdPartyRepository.save(thirdParty);
-            return ResponseUtil.success(saved, "Commercial third party created successfully");
+            return ResponseUtil.success(saved.getName(), "Commercial third party created successfully");
         } catch (Exception e) {
             log.error("Error creating commercial third party", e);
             return ResponseUtil.badRequest(e.getMessage());
@@ -194,10 +194,10 @@ public class CommThirdPartyController {
             String message = "Commercial third party updated successfully";
             if (file != null && !file.isEmpty()) {
                 String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
-                String originalFileName = documentUploadService.generateOriginalFileName("CommThirdParty", existing.getName(), extension);
+                String originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(), existing.getName(), extension);
 
                 Document updatedDocument = documentUploadService
-                        .handleFileUpdate(existing.getDocument(), file, "comm_third_party", originalFileName, account)
+                        .handleFileUpdate(existing.getDocument(), file,UPLOAD_FOLDER, originalFileName,  existing.getDoneBy())
                         .map(documentRepository::save)
                         .orElse(null);
 
@@ -212,7 +212,7 @@ public class CommThirdPartyController {
 
             // Save updates
             CommThirdParty saved = commThirdPartyRepository.save(existing);
-            return ResponseUtil.success(saved, message);
+            return ResponseUtil.success(saved.getName(), message);
 
         } catch (Exception e) {
             log.error("Error updating commercial third party with ID: {}", id, e);

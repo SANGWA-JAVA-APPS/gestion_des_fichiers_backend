@@ -17,11 +17,11 @@ import java.util.Optional;
 @Repository
 public interface AccordConcessionRepository extends JpaRepository<AccordConcession, Long> {
 
-    Page<AccordConcession> findByActiveTrue(Pageable pageable);
+    Page<AccordConcessionProjection> findByActiveTrue(Pageable pageable);
 
-    Page<AccordConcession> findByActiveTrueAndStatus_Id(Long statusId, Pageable pageable);
+    Page<AccordConcessionProjection> findByActiveTrueAndStatus_Id(Long statusId, Pageable pageable);
 
-    Page<AccordConcession> findByActiveTrueAndDocument_Id(Long documentId, Pageable pageable);
+    Page<AccordConcessionProjection> findByActiveTrueAndDocument_Id(Long documentId, Pageable pageable);
 
     @Query("SELECT a FROM AccordConcession a WHERE a.active = true AND "
             + "(LOWER(a.numeroAccord) LIKE LOWER(CONCAT('%', :search, '%')) OR "
@@ -135,7 +135,7 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
     @Query("SELECT a FROM AccordConcession a WHERE a.active = true AND "
             + "LOWER(a.contratConcession) LIKE LOWER(CONCAT('%', :search, '%')) OR "
             + "LOWER(a.emplacement) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<AccordConcession> findByActiveTrueAndContratOrEmplacementContaining(@Param("search") String search, Pageable pageable);
+    Page<AccordConcessionProjection> findByActiveTrueAndContratOrEmplacementContaining(@Param("search") String search, Pageable pageable);
 
     @Query("SELECT a.id as id, a.dateTime as dateTime, a.contratConcession as contratConcession, "
             + "a.numeroAccord as numeroAccord, a.objetConcession as objetConcession, a.concessionnaire as concessionnaire, "
@@ -190,7 +190,7 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
           AND (:ownerId IS NULL OR o.id = :ownerId)
     """
     )
-    Page<AccordConcession> findAllActiveWithDetails(
+    Page<AccordConcessionProjection> findAllActiveWithDetails(
             @Param("ownerId") Long ownerId,
             Pageable pageable
     );
@@ -205,7 +205,7 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "WHERE a.active = true AND "
             + "(LOWER(a.numeroAccord) LIKE LOWER(CONCAT('%', :search, '%')) OR "
             + "LOWER(a.objetConcession) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<AccordConcession> findByActiveTrueAndNumeroAccordOrObjetConcessionContainingWithDetails(@Param("search") String search, Pageable pageable);
+    Page<AccordConcessionProjection> findByActiveTrueAndNumeroAccordOrObjetConcessionContainingWithDetails(@Param("search") String search, Pageable pageable);
 
     @Query("SELECT a FROM AccordConcession a "
             + "JOIN FETCH a.document d "
@@ -214,7 +214,7 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "JOIN FETCH a.doneBy "
             + "LEFT JOIN FETCH a.sectionCategory "
             + "WHERE a.active = true AND a.status.id = :statusId")
-    Page<AccordConcession> findByActiveTrueAndStatusIdWithDetails(@Param("statusId") Long statusId, Pageable pageable);
+    Page<AccordConcessionProjection> findByActiveTrueAndStatusIdWithDetails(@Param("statusId") Long statusId, Pageable pageable);
 
     @Query("SELECT a FROM AccordConcession a "
             + "JOIN FETCH a.document d "
@@ -223,7 +223,7 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "JOIN FETCH a.doneBy "
             + "LEFT JOIN FETCH a.sectionCategory "
             + "WHERE a.active = true AND a.sectionCategory.id = :sectionCategoryId")
-    Page<AccordConcession> findByActiveTrueAndSectionCategoryIdWithDetails(@Param("sectionCategoryId") Long sectionCategoryId, Pageable pageable);
+    Page<AccordConcessionProjection> findByActiveTrueAndSectionCategoryIdWithDetails(@Param("sectionCategoryId") Long sectionCategoryId, Pageable pageable);
 
     @Query("SELECT a FROM AccordConcession a "
             + "JOIN FETCH a.document d "
@@ -232,5 +232,5 @@ public interface AccordConcessionRepository extends JpaRepository<AccordConcessi
             + "JOIN FETCH a.doneBy "
             + "LEFT JOIN FETCH a.sectionCategory "
             + "WHERE a.active = true AND a.document.id = :documentId")
-    Page<AccordConcession> findByActiveTrueAndDocumentIdWithDetails(@Param("documentId") Long documentId, Pageable pageable);
+    Page<AccordConcessionProjection> findByActiveTrueAndDocumentIdWithDetails(@Param("documentId") Long documentId, Pageable pageable);
 }

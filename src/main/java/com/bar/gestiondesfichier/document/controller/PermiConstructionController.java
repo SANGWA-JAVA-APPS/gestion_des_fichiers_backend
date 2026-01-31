@@ -52,7 +52,7 @@ public class PermiConstructionController {
     private final DocStatusRepository docStatusRepository;
     private final SectionCategoryRepository sectionCategoryRepository;
     private final CurrentUser currentUser;
-
+    private static final String DOCUMENT_FOLDER = "permi_construction";
     public PermiConstructionController(PermiConstructionRepository permiConstructionRepository,
                                        DocumentUploadService documentUploadService,
                                        DocumentRepository documentRepository,
@@ -232,8 +232,7 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
             long fileSize;
 
             try {
-                filePath = documentUploadService.uploadFile(file, "permi_construction");
-
+                filePath = documentUploadService.uploadFile(file,DOCUMENT_FOLDER);
                 contentType = file.getContentType();
                 fileSize = file.getSize();
                 fileExtension = documentUploadService.extractFileExtension(
@@ -242,7 +241,7 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
                 uniqueFileName = Paths.get(filePath).getFileName().toString();
 
                 originalFileName = documentUploadService.generateOriginalFileName(
-                        "Permi_Construction",
+                        file.getOriginalFilename(),
                         permiConstruction.getNumeroPermis(),
                         fileExtension
                 );
@@ -355,13 +354,13 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
                 if (file != null && !file.isEmpty()) {
                 String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
                 String originalFileName = documentUploadService.generateOriginalFileName(
-                        "Permi_Construction",
+                        file.getOriginalFilename(),
                         existing.getNumeroPermis(),
                         extension
                 );
 
                 Document updatedDocument = documentUploadService
-                        .handleFileUpdate(existing.getDocument(), file, "permi_construction", originalFileName, existing.getDoneBy())
+                        .handleFileUpdate(existing.getDocument(), file,  DOCUMENT_FOLDER, originalFileName, existing.getDoneBy())
                         .map(documentRepository::save)
                         .orElse(null);
 

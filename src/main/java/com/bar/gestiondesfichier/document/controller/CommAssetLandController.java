@@ -47,6 +47,7 @@ public class CommAssetLandController {
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
     private final CurrentUser  currentUser;
+    private static final String DOCUMENT_FOLDER = "comm_asset_land";
 
     public CommAssetLandController(
             CommAssetLandRepository commAssetLandRepository,
@@ -174,7 +175,7 @@ public class CommAssetLandController {
             // Upload file to comm_asset_land folder
             String filePath;
             try {
-                filePath = documentUploadService.uploadFile(file, "comm_asset_land");
+                filePath = documentUploadService.uploadFile(file,DOCUMENT_FOLDER);
                 log.info("File uploaded successfully to: {}", filePath);
             } catch (IOException e) {
                 log.error("Failed to upload file", e);
@@ -186,8 +187,7 @@ public class CommAssetLandController {
             Long fileSize = file.getSize();
             String fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
             String uniqueFileName = Paths.get(filePath).getFileName().toString();
-            String originalFileName = documentUploadService.generateOriginalFileName(
-                    "Comm_Asset_Land",
+            String originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(),
                     commAssetLand.getReference(),
                     fileExtension
             );
@@ -270,13 +270,14 @@ public class CommAssetLandController {
                 if (file != null && !file.isEmpty()) {
                 String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
                 String originalFileName = documentUploadService.generateOriginalFileName(
-                        "Comm_Asset_Land",
+                        file.getOriginalFilename(),
                         existingCommAssetLand.getReference(),
                         extension
                 );
 
                 Document updatedDocument = documentUploadService
-                        .handleFileUpdate(existingCommAssetLand.getDocument(), file, "comm_asset_land", originalFileName, existingCommAssetLand.getDoneBy())
+                        .handleFileUpdate(existingCommAssetLand.getDocument(), file, DOCUMENT_FOLDER
+                                , originalFileName, existingCommAssetLand.getDoneBy())
                         .map(documentRepository::save)
                         .orElse(null);
 

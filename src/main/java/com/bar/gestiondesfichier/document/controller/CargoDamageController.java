@@ -40,6 +40,7 @@ import java.util.Optional;
 @Tag(name = "Document", description = "Cargo Damage CRUD operations with pagination")
 @Slf4j
 public class CargoDamageController {
+    private static final String UPLOAD_FOLDER = "cargo_damage";
 
     private final CargoDamageRepository cargoDamageRepository;
     private final DocumentUploadService documentUploadService;
@@ -165,7 +166,7 @@ public class CargoDamageController {
                 // Upload file to cargo_damage folder
                 String filePath;
                 try {
-                    filePath = documentUploadService.uploadFile(file, "cargo_damage");
+                    filePath = documentUploadService.uploadFile(file, UPLOAD_FOLDER);
                     log.info("File uploaded successfully to: {}", filePath);
                 } catch (IOException e) {
                     log.error("Failed to upload file", e);
@@ -178,7 +179,7 @@ public class CargoDamageController {
                 String fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
                 String uniqueFileName = Paths.get(filePath).getFileName().toString();
                 String originalFileName = documentUploadService.generateOriginalFileName(
-                        "Cargo_Damage",
+                     file.getOriginalFilename(),
                         cargoDamage.getRefeRequest(),
                         fileExtension
                 );
@@ -275,13 +276,13 @@ public class CargoDamageController {
                 if (file != null && !file.isEmpty()) {
                 String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
                 String originalFileName = documentUploadService.generateOriginalFileName(
-                        "Cargo_Damage",
+                       file.getOriginalFilename(),
                         existingCargoDamage.getRefeRequest(),
                         extension
                 );
 
                 Document updatedDocument = documentUploadService
-                        .handleFileUpdate(existingCargoDamage.getDocument(), file, "cargo_damage", originalFileName, existingCargoDamage.getDoneBy())
+                        .handleFileUpdate(existingCargoDamage.getDocument(), file, UPLOAD_FOLDER, originalFileName, existingCargoDamage.getDoneBy())
                         .map(documentRepository::save)
                         .orElse(null);
 

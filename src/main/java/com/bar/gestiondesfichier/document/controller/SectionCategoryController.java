@@ -104,7 +104,7 @@ public class SectionCategoryController {
             if (sectionCategory.getName() == null || sectionCategory.getName().trim().isEmpty()) {
                 return ResponseUtil.badRequest("Section category name is required");
             }
-            
+
             // Check if category with this name already exists
             if (sectionCategoryRepository.existsByNameAndActiveTrue(sectionCategory.getName())) {
                 return ResponseUtil.badRequest("Section category with this name already exists");

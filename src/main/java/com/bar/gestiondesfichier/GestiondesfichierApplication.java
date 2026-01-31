@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableAsync
 public class GestiondesfichierApplication {
-
     public static void main(String[] args) {
         System.out.println("Testing the workflow");
         SpringApplication.run(GestiondesfichierApplication.class, args);

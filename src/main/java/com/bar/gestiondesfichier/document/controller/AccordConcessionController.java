@@ -3,11 +3,15 @@ package com.bar.gestiondesfichier.document.controller;
 import com.bar.gestiondesfichier.common.annotation.DocumentControllerCors;
 import com.bar.gestiondesfichier.common.util.ResponseUtil;
 import com.bar.gestiondesfichier.config.CurrentUser;
+import com.bar.gestiondesfichier.document.dto.AccordConcessionRequest;
 import com.bar.gestiondesfichier.document.model.AccordConcession;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.AccordConcessionProjection;
+
 import com.bar.gestiondesfichier.document.repository.AccordConcessionRepository;
+import com.bar.gestiondesfichier.document.repository.DocStatusRepository;
 import com.bar.gestiondesfichier.document.repository.DocumentRepository;
+import com.bar.gestiondesfichier.document.repository.SectionCategoryRepository;
 import com.bar.gestiondesfichier.document.service.DocumentUploadService;
 import com.bar.gestiondesfichier.entity.Account;
 import com.bar.gestiondesfichier.repository.AccountRepository;
@@ -23,8 +27,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
@@ -46,17 +48,21 @@ public class AccordConcessionController {
     private final DocumentRepository documentRepository;
     private final AccountRepository accountRepository;
     private final DocumentUploadService documentUploadService;
+    private  final DocStatusRepository docStatusRepository;
+    private final SectionCategoryRepository sectionCategoryRepository;
 private final CurrentUser  currentUser;
-
+    private static final String DOCUMENT_FOLDER = "accord_concession";
     public AccordConcessionController(
             AccordConcessionRepository accordConcessionRepository,
             DocumentRepository documentRepository,
             AccountRepository accountRepository,
-            DocumentUploadService documentUploadService, CurrentUser currentUser) {
+            DocumentUploadService documentUploadService, DocStatusRepository docStatusRepository, SectionCategoryRepository sectionCategoryRepository, CurrentUser currentUser) {
         this.accordConcessionRepository = accordConcessionRepository;
         this.documentRepository = documentRepository;
         this.accountRepository = accountRepository;
         this.documentUploadService = documentUploadService;
+        this.docStatusRepository = docStatusRepository;
+        this.sectionCategoryRepository = sectionCategoryRepository;
         this.currentUser = currentUser;
     }
 
@@ -66,7 +72,7 @@ private final CurrentUser  currentUser;
         @ApiResponse(responseCode = "200", description = "Concession agreements retrieved successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
         @ApiResponse(responseCode = "403", description = "Session expired")})
-    public ResponseEntity<Page<AccordConcession>> getAllAccordConcession(
+    public ResponseEntity<Page<AccordConcessionProjection>> getAllAccordConcession(
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") Integer page,
             @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "20") Integer size,
             @Parameter(description = "Sort field") @RequestParam(defaultValue = "numeroAccord") String sort,
@@ -76,11 +82,11 @@ private final CurrentUser  currentUser;
             @Parameter(description = "Filter by section category ID") @RequestParam(required = false) Long sectionCategoryId,
             @Parameter(description = "Search term") @RequestParam(required = false) String search) {
         try {
-            log.info("Retrieving concession agreements - page: {}, size: {}, sort: {} {}, statusId: {}, search: {}",
+            log.info("Retrieving concession agreements!!!!!!!!!!+++++++++++++ - page: {}, size: {}, sort: {} {}, statusId: {}, search: {}",
                     page, size, sort, direction, statusId, search);
 Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
-            Page<AccordConcession> accordConcessions;
+            Page<AccordConcessionProjection> accordConcessions;
 
             if (search != null && !search.trim().isEmpty()) {
                 accordConcessions = accordConcessionRepository.findByActiveTrueAndNumeroAccordOrObjetConcessionContainingWithDetails(search, pageable);
@@ -131,183 +137,123 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
 
     @PostMapping(consumes = {"multipart/form-data"})
     @Transactional
-    @Operation(summary = "Create concession agreement", description = "Create a new concession agreement record with file upload")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Concession agreement created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data or missing file")
-    })
     public ResponseEntity<Map<String, Object>> createAccordConcession(
-            @RequestPart("accordConcession") AccordConcession accordConcession,
+            @RequestPart("accordConcession") AccordConcessionRequest request,
             @RequestPart("file") MultipartFile file) {
-        try {
-            log.info("Creating new concession agreement: {}", accordConcession.getNumeroAccord());
 
-            // Validate required fields
-            if (accordConcession.getNumeroAccord() == null || accordConcession.getNumeroAccord().trim().isEmpty()) {
+        try {
+            // --- Validate required fields ---
+            if (request.getNumeroAccord() == null || request.getNumeroAccord().trim().isEmpty()) {
                 return ResponseUtil.badRequest("Numero accord is required");
             }
-
-            if (accordConcession.getDoneBy() == null) {
-                return ResponseUtil.badRequest("DoneBy (Account) is required");
-            }
-
-            if (accordConcession.getStatus() == null) {
-                return ResponseUtil.badRequest("Status is required");
-            }
-
-            // Get the current user (owner) for the document
-            Account owner = accordConcession.getDoneBy();
-
-            // Verify the account exists
-            Optional<Account> accountOpt = accountRepository.findById(owner.getId());
-            if (accountOpt.isEmpty()) {
-                return ResponseUtil.badRequest("Account not found with ID: " + owner.getId());
-            }
-            Account actualOwner = accountOpt.get();
-
-            // Prepare variables for document metadata
-            String contentType;
-            String fileExtension;
-            String uniqueFileName;
-            String originalFileName;
-            String filePath;
-            long fileSize;
-
-            // Validate that file is provided (mandatory)
             if (file == null || file.isEmpty()) {
-                log.warn("File upload is required but not provided for concession agreement: {}",
-                        accordConcession.getNumeroAccord());
-                return ResponseUtil.badRequest("Document file is required. Please upload a file to create the concession agreement.");
+                return ResponseUtil.badRequest("Document file is required");
             }
 
-            // Handle file upload
-            log.info("File upload detected: {}", file.getOriginalFilename());
+            // --- Resolve account ---
+            Long ownerId = request.getDoneById() != null ? request.getDoneById() : currentUser.getAccountId();
+            Account owner = accountRepository.findById(ownerId)
+                    .orElseThrow(() -> new IllegalArgumentException("Account not found with ID: " + ownerId));
 
-            // Upload file and get file path
-            try {
-                filePath = documentUploadService.uploadFile(file, "accord_concession");
+            // --- Handle file upload ---
+            String filePath = documentUploadService.uploadFile(file, DOCUMENT_FOLDER);
+            String contentType = file.getContentType();
+            long fileSize = file.getSize();
+            String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
+            String uniqueFileName = Paths.get(filePath).getFileName().toString();
+            String originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(), request.getNumeroAccord(), extension);
 
-                // Extract information from uploaded file
-                contentType = file.getContentType();
-                fileSize = file.getSize();
-                fileExtension = documentUploadService.extractFileExtension(file.getOriginalFilename(), contentType);
-
-                // Extract unique filename from path
-                uniqueFileName = Paths.get(filePath).getFileName().toString();
-
-                // Generate original filename
-                originalFileName = documentUploadService.generateOriginalFileName(
-                        "Accord_Concession",
-                        accordConcession.getNumeroAccord(),
-                        fileExtension
-                );
-
-                log.info("File uploaded successfully: {}", filePath);
-            } catch (IOException e) {
-                log.error("Failed to upload file", e);
-                return ResponseUtil.badRequest("Failed to upload file: " + e.getMessage());
-            }
-
-            // Initialize the document using DocumentUploadService
-            Document document = documentUploadService.initializeDocument(uniqueFileName, originalFileName, contentType, fileSize, filePath, actualOwner);
-            // Save the document first
+            Document document = documentUploadService.initializeDocument(uniqueFileName, originalFileName, contentType, fileSize, filePath, owner);
             Document savedDocument = documentRepository.save(document);
-            log.info("Created document with ID: {} and version: {} for concession agreement: {}",
-                    savedDocument.getId(), savedDocument.getVersion(), accordConcession.getNumeroAccord());
 
-            // Link the saved document to the accord concession
-            accordConcession.setDocument(savedDocument);
-            accordConcession.setActive(true);
+            // --- Build AccordConcession entity ---
+            AccordConcession accord = new AccordConcession();
+            accord.setNumeroAccord(trim(request.getNumeroAccord()));
+            accord.setContratConcession(trim(request.getContratConcession()));
+            accord.setObjetConcession(trim(request.getObjetConcession()));
+            accord.setConcessionnaire(trim(request.getConcessionnaire()));
+            accord.setConditionsFinancieres(trim(request.getConditionsFinancieres()));
+            accord.setEmplacement(trim(request.getEmplacement()));
+            accord.setCoordonneesGps(trim(request.getCoordonneesGps()));
+            accord.setRapportTransfertGestion(trim(request.getRapportTransfertGestion()));
+            accord.setDureeAnnees(request.getDureeAnnees());
+            accord.setDateDebutConcession(request.getDateDebutConcession());
+            accord.setDateFinConcession(request.getDateFinConcession());
+            accord.setDocument(savedDocument);
+            accord.setActive(true);
+            accord.setDoneBy(owner);
 
-            // Normalize strings
-            accordConcession.setContratConcession(trim(accordConcession.getContratConcession()));
-            accordConcession.setNumeroAccord(trim(accordConcession.getNumeroAccord()));
-            accordConcession.setObjetConcession(trim(accordConcession.getObjetConcession()));
-            accordConcession.setConcessionnaire(trim(accordConcession.getConcessionnaire()));
-            accordConcession.setConditionsFinancieres(trim(accordConcession.getConditionsFinancieres()));
-            accordConcession.setEmplacement(trim(accordConcession.getEmplacement()));
-            accordConcession.setCoordonneesGps(trim(accordConcession.getCoordonneesGps()));
-            accordConcession.setRapportTransfertGestion(trim(accordConcession.getRapportTransfertGestion()));
+            // --- Resolve relationships ---
+            if (request.getSectionCategoryId() != null) {
+                accord.setSectionCategory(
+                        sectionCategoryRepository.findById(request.getSectionCategoryId())
+                                .orElseThrow(() -> new IllegalArgumentException("Invalid SectionCategory ID"))
+                );
+            }
+            if (request.getStatusId() != null) {
+                accord.setStatus(
+                        docStatusRepository.findById(request.getStatusId())
+                                .orElseThrow(() -> new IllegalArgumentException("Invalid Status ID"))
+                );
+            }
 
-// Numbers & dates (no transformation, just touch)
-            accordConcession.setDureeAnnees(accordConcession.getDureeAnnees());
-            accordConcession.setDateDebutConcession(accordConcession.getDateDebutConcession());
-            accordConcession.setDateFinConcession(accordConcession.getDateFinConcession());
+            AccordConcession savedAccord = accordConcessionRepository.save(accord);
 
+            return ResponseUtil.success(savedAccord, "Concession agreement created successfully");
 
-            // Save the accord concession
-            AccordConcession savedAccordConcession = accordConcessionRepository.save(accordConcession);
-
-            return ResponseUtil.success(savedAccordConcession, "Concession agreement created successfully");
         } catch (Exception e) {
             log.error("Error creating concession agreement", e);
             return ResponseUtil.badRequest("Failed to create concession agreement: " + e.getMessage());
         }
     }
 
-    @PutMapping("/{id}")
-    @Transactional
-    @Operation(summary = "Update concession agreement", description = "Update an existing concession agreement record")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Concession agreement updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Concession agreement not found or invalid data")
-    })
-    public ResponseEntity<Map<String, Object>> updateAccordConcession(
-            @PathVariable Long id,
-            @RequestBody AccordConcession accordConcession) {
-
-        try {
-            log.info("Updating concession agreement with ID: {}", id);
-
-            AccordConcession existing = accordConcessionRepository
-                    .findByIdAndActiveTrue(id)
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Concession agreement not found with ID: " + id));
-
-            applyAccordConcessionUpdates(existing, accordConcession);
-
-            AccordConcession saved = accordConcessionRepository.save(existing);
-            return ResponseUtil.success(saved, "Concession agreement updated successfully");
-
-        } catch (Exception e) {
-            log.error("Error updating concession agreement with ID: {}", id, e);
-            return ResponseUtil.badRequest("Failed to update concession agreement: " + e.getMessage());
-        }
-    }
 
     @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
     @Transactional
-    @Operation(summary = "Update concession agreement with file", description = "Update an existing concession agreement record with optional file upload")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Concession agreement updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Concession agreement not found or invalid data")
-    })
     public ResponseEntity<Map<String, Object>> updateAccordConcessionWithFile(
             @PathVariable Long id,
-            @RequestPart("accordConcession") AccordConcession accordConcession,
+            @RequestPart("accordConcession") AccordConcessionRequest request,
             @RequestPart(value = "file", required = false) MultipartFile file) {
+
         try {
-            log.info("Updating concession agreement with file, ID: {}", id);
+            AccordConcession existing = accordConcessionRepository.findByIdAndActiveTrue(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Concession agreement not found with ID: " + id));
 
-            AccordConcession existing = accordConcessionRepository
-                    .findByIdAndActiveTrue(id)
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Concession agreement not found with ID: " + id));
+            // --- Update fields ---
+            if (request.getNumeroAccord() != null) existing.setNumeroAccord(trim(request.getNumeroAccord()));
+            if (request.getContratConcession() != null) existing.setContratConcession(trim(request.getContratConcession()));
+            if (request.getObjetConcession() != null) existing.setObjetConcession(trim(request.getObjetConcession()));
+            if (request.getConcessionnaire() != null) existing.setConcessionnaire(trim(request.getConcessionnaire()));
+            if (request.getConditionsFinancieres() != null) existing.setConditionsFinancieres(trim(request.getConditionsFinancieres()));
+            if (request.getEmplacement() != null) existing.setEmplacement(trim(request.getEmplacement()));
+            if (request.getCoordonneesGps() != null) existing.setCoordonneesGps(trim(request.getCoordonneesGps()));
+            if (request.getRapportTransfertGestion() != null) existing.setRapportTransfertGestion(trim(request.getRapportTransfertGestion()));
+            if (request.getDureeAnnees() != null) existing.setDureeAnnees(request.getDureeAnnees());
+            if (request.getDateDebutConcession() != null) existing.setDateDebutConcession(request.getDateDebutConcession());
+            if (request.getDateFinConcession() != null) existing.setDateFinConcession(request.getDateFinConcession());
 
-            applyAccordConcessionUpdates(existing, accordConcession);
-
-                String message = "Concession agreement updated successfully";
-
-                if (file != null && !file.isEmpty()) {
-                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
-                String originalFileName = documentUploadService.generateOriginalFileName(
-                        "Accord_Concession",
-                        existing.getNumeroAccord(),
-                        extension
+            // --- Update relationships ---
+            if (request.getSectionCategoryId() != null) {
+                existing.setSectionCategory(
+                        sectionCategoryRepository.findById(request.getSectionCategoryId())
+                                .orElseThrow(() -> new IllegalArgumentException("Invalid SectionCategory ID"))
                 );
+            }
+            if (request.getStatusId() != null) {
+                existing.setStatus(
+                        docStatusRepository.findById(request.getStatusId())
+                                .orElseThrow(() -> new IllegalArgumentException("Invalid Status ID"))
+                );
+            }
+
+            // --- Handle optional file upload ---
+            String message = "Concession agreement updated successfully";
+            if (file != null && !file.isEmpty()) {
+                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+                String originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(), existing.getNumeroAccord(), extension);
 
                 Document updatedDocument = documentUploadService
-                        .handleFileUpdate(existing.getDocument(), file, "accord_concession", originalFileName, existing.getDoneBy())
+                        .handleFileUpdate(existing.getDocument(), file, DOCUMENT_FOLDER, originalFileName, existing.getDoneBy())
                         .map(documentRepository::save)
                         .orElse(null);
 
@@ -319,11 +265,13 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
 
             AccordConcession saved = accordConcessionRepository.save(existing);
             return ResponseUtil.success(saved, message);
+
         } catch (Exception e) {
             log.error("Error updating concession agreement with ID: {}", id, e);
             return ResponseUtil.badRequest("Failed to update concession agreement: " + e.getMessage());
         }
     }
+
 
 
     @DeleteMapping("/{id}")
