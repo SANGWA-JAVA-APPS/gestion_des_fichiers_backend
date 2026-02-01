@@ -117,16 +117,17 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
             String search,
             Pageable pageable
     ) {
-        if (search != null && !search.trim().isEmpty()) {
-            return repo.search(search.trim(), ownerId, pageable);
-        } else if (status != null) {
-            Long statusId = Long.parseLong(status);
-            return repo.findByStatus(statusId, ownerId, pageable);
-        } else if (sectionCategoryId != null) {
-            return repo.findBySection(sectionCategoryId, ownerId, pageable);
-        } else {
-            return repo.findAllActive(ownerId, pageable);
-        }
+        Long statusId = (status != null) ? Long.parseLong(status) : null;
+        String searchTerm = (search != null && !search.isBlank()) ? "%" + search.trim().toLowerCase() + "%" : null;
+
+        return repo.findFiltered(
+                searchTerm != null ? searchTerm : reference,
+                statusId,
+                sectionCategoryId,
+                sectionCategoryCode,
+                ownerId,
+                pageable
+        );
     }
 
     // ------------------------

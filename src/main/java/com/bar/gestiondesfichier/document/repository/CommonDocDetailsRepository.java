@@ -21,14 +21,34 @@ public interface CommonDocDetailsRepository extends JpaRepository<CommonDocDetai
       AND (:sectionId IS NULL OR c.sectionCategory.id = :sectionId)
       AND (:sectionCode IS NULL OR c.sectionCategory.code = :sectionCode)
     """)
-    Page<CommonDocDetails> getCommonDocDetails(
+    Page<CommonDocDetailsProjection> getCommonDocDetails(
             @Param("reference") String reference,
             @Param("status") String status,
             @Param("sectionId") Long sectionId,
             @Param("sectionCode") String sectionCode,
             Pageable pageable
     );
-    
+
+
+    @Query("""
+    SELECT c FROM CommonDocDetails c
+    WHERE c.active = true
+      AND (:reference IS NULL OR LOWER(c.reference) LIKE LOWER(CONCAT('%', :reference, '%')))
+      AND (:statusId IS NULL OR c.status.id = :statusId)
+      AND (:sectionId IS NULL OR c.sectionCategory.id = :sectionId)
+      AND (:sectionCode IS NULL OR c.sectionCategory.code = :sectionCode)
+      AND (:ownerId IS NULL OR c.doneBy.id = :ownerId)
+    ORDER BY c.dateTime DESC
+""")
+    Page<CommonDocDetailsProjection> findFiltered(
+            @Param("reference") String reference,
+            @Param("statusId") Long statusId,
+            @Param("sectionId") Long sectionId,
+            @Param("sectionCode") String sectionCode,
+            @Param("ownerId") Long ownerId,
+            Pageable pageable
+    );
+
     @Query("""
     SELECT c FROM CommonDocDetails c
     WHERE c.active = true

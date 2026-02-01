@@ -52,7 +52,7 @@ public class CommonDocDetailsController {
             @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc") String direction,
             @Parameter(description = "Filter by status") @RequestParam(required = false) String status,
             @Parameter(description = "Filter by section category ID") @RequestParam(required = false) Long sectionCategoryId,
-            @Parameter(description = "Filter by section category code") @RequestParam(required = false) String sectionCategoryCode,
+            @Parameter(description = "Filter by section category code") @RequestParam(required = false) String sectionCode,
             @Parameter(description = "Search term") @RequestParam(required = false) String search) {
         
         Long ownerId = currentUser.isUser() ? currentUser.getAccountId() : null;
@@ -63,7 +63,7 @@ public class CommonDocDetailsController {
 
             Pageable pageable = ResponseUtil.createPageable(page, size, sort, direction);
             Page<CommonDocDetailsProjection> commonDocDetails = commonDocDetailsService.getCommonDocDetails(
-                    null, status, sectionCategoryId, sectionCategoryCode, ownerId, search, pageable);
+                    null, status, sectionCategoryId, sectionCode, ownerId, search, pageable);
 
             log.info("Successfully retrieved {} common document details", commonDocDetails.getTotalElements());
             return ResponseEntity.ok(commonDocDetails);

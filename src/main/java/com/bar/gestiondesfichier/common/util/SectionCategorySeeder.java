@@ -4,10 +4,12 @@ import com.bar.gestiondesfichier.document.model.SectionCategory;
 import com.bar.gestiondesfichier.document.repository.SectionCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@Order(1)
 @RequiredArgsConstructor
 @Transactional
 public class SectionCategorySeeder implements CommandLineRunner {

@@ -11,8 +11,6 @@ public interface CommonDocDetailsProjection extends BaseDocumentRelatedProjectio
 
     String getReference();
     String getDescription();
-    
-    String getVersion();
     LocalDateTime getExpirationDate();
     SectionCategoryInfo getSectionCategory();
 }
