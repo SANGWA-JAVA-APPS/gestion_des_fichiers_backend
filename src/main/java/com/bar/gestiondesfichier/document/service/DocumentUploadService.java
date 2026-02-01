@@ -370,7 +370,8 @@ public class DocumentUploadService {
      * "Accord_Concession_ACC-2025-001.pdf")
      */
     public String generateOriginalFileName(String prefix, String identifier, String extension) {
-        String filename = prefix + "_" + identifier + extension;
+        String filename = prefix;
+        //                + "_" + identifier + extension;
         log.debug("Generated original filename: {}", filename);
         return filename;
     }

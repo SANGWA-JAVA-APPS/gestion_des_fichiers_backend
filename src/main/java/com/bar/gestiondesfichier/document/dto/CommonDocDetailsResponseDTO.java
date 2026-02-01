@@ -11,8 +11,9 @@ public class CommonDocDetailsResponseDTO {
     private String status;
     private LocalDateTime dateTime;
     private String version;
-    private Long sectionCategoryId;      // updated
-    private String sectionCategoryCode;   // new
-    private String sectionCategoryName;   // new
+    private Long sectionCategoryId;
+    private String sectionCategoryCode;
+    private String sectionCategoryName;
+    private Long doneById;
     private LocalDateTime expirationDate;
 }

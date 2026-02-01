@@ -7,7 +7,6 @@ import com.bar.gestiondesfichier.document.dto.AccordConcessionRequest;
 import com.bar.gestiondesfichier.document.model.AccordConcession;
 import com.bar.gestiondesfichier.document.model.Document;
 import com.bar.gestiondesfichier.document.projection.AccordConcessionProjection;
-
 import com.bar.gestiondesfichier.document.repository.AccordConcessionRepository;
 import com.bar.gestiondesfichier.document.repository.DocStatusRepository;
 import com.bar.gestiondesfichier.document.repository.DocumentRepository;
@@ -217,49 +216,64 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
 
         try {
             AccordConcession existing = accordConcessionRepository.findByIdAndActiveTrue(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Concession agreement not found with ID: " + id));
+                    .orElseThrow(() ->
+                            new IllegalArgumentException("Concession agreement not found with ID: " + id)
+                    );
 
-            // --- Update fields ---
-            if (request.getNumeroAccord() != null) existing.setNumeroAccord(trim(request.getNumeroAccord()));
-            if (request.getContratConcession() != null) existing.setContratConcession(trim(request.getContratConcession()));
-            if (request.getObjetConcession() != null) existing.setObjetConcession(trim(request.getObjetConcession()));
-            if (request.getConcessionnaire() != null) existing.setConcessionnaire(trim(request.getConcessionnaire()));
-            if (request.getConditionsFinancieres() != null) existing.setConditionsFinancieres(trim(request.getConditionsFinancieres()));
-            if (request.getEmplacement() != null) existing.setEmplacement(trim(request.getEmplacement()));
-            if (request.getCoordonneesGps() != null) existing.setCoordonneesGps(trim(request.getCoordonneesGps()));
-            if (request.getRapportTransfertGestion() != null) existing.setRapportTransfertGestion(trim(request.getRapportTransfertGestion()));
-            if (request.getDureeAnnees() != null) existing.setDureeAnnees(request.getDureeAnnees());
-            if (request.getDateDebutConcession() != null) existing.setDateDebutConcession(request.getDateDebutConcession());
-            if (request.getDateFinConcession() != null) existing.setDateFinConcession(request.getDateFinConcession());
+            // ✅ 1. Apply DTO → Entity updates (SAFE, CONTROLLED)
+            applyAccordConcessionUpdates(existing, request);
 
-            // --- Update relationships ---
+            // ✅ 2. Resolve relationships (IDs must be explicit)
             if (request.getSectionCategoryId() != null) {
                 existing.setSectionCategory(
                         sectionCategoryRepository.findById(request.getSectionCategoryId())
-                                .orElseThrow(() -> new IllegalArgumentException("Invalid SectionCategory ID"))
+                                .orElseThrow(() ->
+                                        new IllegalArgumentException("Invalid SectionCategory ID")
+                                )
                 );
             }
+
             if (request.getStatusId() != null) {
                 existing.setStatus(
                         docStatusRepository.findById(request.getStatusId())
-                                .orElseThrow(() -> new IllegalArgumentException("Invalid Status ID"))
+                                .orElseThrow(() ->
+                                        new IllegalArgumentException("Invalid Status ID")
+                                )
                 );
             }
 
-            // --- Handle optional file upload ---
+            // ✅ 3. Handle optional file + versioning
             String message = "Concession agreement updated successfully";
+
             if (file != null && !file.isEmpty()) {
-                String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
-                String originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(), existing.getNumeroAccord(), extension);
+                String extension = documentUploadService.extractFileExtension(
+                        file.getOriginalFilename(),
+                        file.getContentType()
+                );
+
+                String originalFileName =
+                        documentUploadService.generateOriginalFileName(
+                                file.getOriginalFilename(),
+                                existing.getNumeroAccord(),
+                                extension
+                        );
 
                 Document updatedDocument = documentUploadService
-                        .handleFileUpdate(existing.getDocument(), file, DOCUMENT_FOLDER, originalFileName, existing.getDoneBy())
+                        .handleFileUpdate(
+                                existing.getDocument(),
+                                file,
+                                DOCUMENT_FOLDER,
+                                originalFileName,
+                                existing.getDoneBy()
+                        )
                         .map(documentRepository::save)
                         .orElse(null);
 
                 if (updatedDocument != null) {
                     existing.setDocument(updatedDocument);
-                    message = "Concession agreement updated successfully. Document version upgraded to " + updatedDocument.getVersion();
+                    message =
+                            "Concession agreement updated successfully. Document version upgraded to "
+                                    + updatedDocument.getVersion();
                 }
             }
 
@@ -268,9 +282,12 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
 
         } catch (Exception e) {
             log.error("Error updating concession agreement with ID: {}", id, e);
-            return ResponseUtil.badRequest("Failed to update concession agreement: " + e.getMessage());
+            return ResponseUtil.badRequest(
+                    "Failed to update concession agreement: " + e.getMessage()
+            );
         }
     }
+
 
 
 
@@ -303,58 +320,44 @@ Long ownerId=currentUser.isUser()?currentUser.getAccountId():null;
         return v == null ? null : v.trim();
     }
 
-    private void applyAccordConcessionUpdates(AccordConcession existing, AccordConcession updates) {
-        if (updates == null) {
-            return;
-        }
+    private void applyAccordConcessionUpdates(
+            AccordConcession existing,
+            AccordConcessionRequest request
+    ) {
+        if (request == null) return;
 
-        // ---------- STRING FIELDS (normalized) ----------
-        if (updates.getContratConcession() != null) {
-            existing.setContratConcession(trim(updates.getContratConcession()));
-        }
-        if (updates.getNumeroAccord() != null) {
-            existing.setNumeroAccord(trim(updates.getNumeroAccord()));
-        }
-        if (updates.getObjetConcession() != null) {
-            existing.setObjetConcession(trim(updates.getObjetConcession()));
-        }
-        if (updates.getConcessionnaire() != null) {
-            existing.setConcessionnaire(trim(updates.getConcessionnaire()));
-        }
-        if (updates.getConditionsFinancieres() != null) {
-            existing.setConditionsFinancieres(trim(updates.getConditionsFinancieres()));
-        }
-        if (updates.getEmplacement() != null) {
-            existing.setEmplacement(trim(updates.getEmplacement()));
-        }
-        if (updates.getCoordonneesGps() != null) {
-            existing.setCoordonneesGps(trim(updates.getCoordonneesGps()));
-        }
-        if (updates.getRapportTransfertGestion() != null) {
-            existing.setRapportTransfertGestion(trim(updates.getRapportTransfertGestion()));
-        }
+        if (request.getNumeroAccord() != null)
+            existing.setNumeroAccord(trim(request.getNumeroAccord()));
 
-        // ---------- NUMBERS ----------
-        if (updates.getDureeAnnees() != null) {
-            existing.setDureeAnnees(updates.getDureeAnnees());
-        }
+        if (request.getContratConcession() != null)
+            existing.setContratConcession(trim(request.getContratConcession()));
 
-        // ---------- DATES ----------
-        if (updates.getDateDebutConcession() != null) {
-            existing.setDateDebutConcession(updates.getDateDebutConcession());
-        }
-        if (updates.getDateFinConcession() != null) {
-            existing.setDateFinConcession(updates.getDateFinConcession());
-        }
+        if (request.getObjetConcession() != null)
+            existing.setObjetConcession(trim(request.getObjetConcession()));
 
-        // ---------- RELATIONS ----------
-        if (updates.getSectionCategory() != null && updates.getSectionCategory().getId() != null) {
-            existing.setSectionCategory(updates.getSectionCategory());
-        }
+        if (request.getConcessionnaire() != null)
+            existing.setConcessionnaire(trim(request.getConcessionnaire()));
 
-        if (updates.getStatus() != null) {
-            existing.setStatus(updates.getStatus());
-        }
+        if (request.getConditionsFinancieres() != null)
+            existing.setConditionsFinancieres(trim(request.getConditionsFinancieres()));
+
+        if (request.getEmplacement() != null)
+            existing.setEmplacement(trim(request.getEmplacement()));
+
+        if (request.getCoordonneesGps() != null)
+            existing.setCoordonneesGps(trim(request.getCoordonneesGps()));
+
+        if (request.getRapportTransfertGestion() != null)
+            existing.setRapportTransfertGestion(trim(request.getRapportTransfertGestion()));
+
+        if (request.getDureeAnnees() != null)
+            existing.setDureeAnnees(request.getDureeAnnees());
+
+        if (request.getDateDebutConcession() != null)
+            existing.setDateDebutConcession(request.getDateDebutConcession());
+
+        if (request.getDateFinConcession() != null)
+            existing.setDateFinConcession(request.getDateFinConcession());
     }
 
 }

@@ -10,15 +10,13 @@ import java.time.LocalDateTime;
 @Table(name = "common_doc_details")
 @Getter
 @Setter
-public class CommonDocDetails {
+public class CommonDocDetails  extends DocumentRelatedEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Long auto-increment
-    private Long id;
+
 
     private String reference;
     private String description;
-    private String status;
+
     private LocalDateTime dateTime;
     private String version;
     private LocalDateTime expirationDate;

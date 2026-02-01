@@ -46,7 +46,7 @@ public class CommonDocDetailsSeeder implements CommandLineRunner {
             doc.setDescription(
                     "Sample document " + i + " for category " + category.getName()
             );
-            doc.setStatus("ACTIVE");
+
             doc.setDateTime(LocalDateTime.now());
             doc.setVersion("1.0");
             doc.setExpirationDate(LocalDateTime.now().plusYears(1));

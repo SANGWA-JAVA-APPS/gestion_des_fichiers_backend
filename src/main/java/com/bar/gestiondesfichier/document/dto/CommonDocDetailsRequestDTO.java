@@ -9,7 +9,9 @@ public class CommonDocDetailsRequestDTO {
     private String description;
     private String status;
     private LocalDateTime dateTime;
-    private String version;
-    private Long sectionCategoryId; // updated to match entity
+    private Long sectionCategoryId;
+    private Long doneById;
+    private Long documentId;
+    private Long statusId;
     private LocalDateTime expirationDate;
 }
