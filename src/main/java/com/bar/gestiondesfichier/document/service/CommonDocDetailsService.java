@@ -6,13 +6,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+
 public interface CommonDocDetailsService {
 
     // Create a new document (file optional)
     CommonDocDetailsProjection createCommonDocDetails(
             CommonDocDetailsRequestDTO request,
             MultipartFile file
-    );
+    ) throws IOException;
 
     // Get a document by ID
     CommonDocDetailsProjection getCommonDocDetailsById(Long id);
@@ -22,7 +24,7 @@ public interface CommonDocDetailsService {
             Long id,
             CommonDocDetailsRequestDTO request,
             MultipartFile file
-    );
+    ) throws IOException;
 
     // Delete a document by ID
     void deleteCommonDocDetails(Long id);

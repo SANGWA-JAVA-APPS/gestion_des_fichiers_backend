@@ -1,5 +1,6 @@
 package com.bar.gestiondesfichier.document.service.impl;
 
+import com.bar.gestiondesfichier.config.CurrentUser;
 import com.bar.gestiondesfichier.document.dto.CommonDocDetailsRequestDTO;
 import com.bar.gestiondesfichier.document.model.CommonDocDetails;
 import com.bar.gestiondesfichier.document.model.Document;
@@ -36,6 +37,7 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
     private final AccountRepository accountRepository;
     private final DocStatusRepository docStatusRepository;
     private static final String DOCUMENT_FOLDER = "common_doc_details";
+    private final CurrentUser currentUser;
 
     public CommonDocDetailsServiceImpl(
             CommonDocDetailsRepository repo,
@@ -43,7 +45,7 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
             DocumentUploadService documentUploadService,
             DocumentRepository documentRepository,
             AccountRepository accountRepository,
-            DocStatusRepository docStatusRepository
+            DocStatusRepository docStatusRepository, CurrentUser currentUser
     ) {
         this.repo = repo;
         this.sectionCategoryRepo = sectionCategoryRepo;
@@ -51,6 +53,7 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
         this.documentRepository = documentRepository;
         this.accountRepository = accountRepository;
         this.docStatusRepository = docStatusRepository;
+        this.currentUser = currentUser;
     }
 
     @Override
@@ -58,9 +61,9 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
     public CommonDocDetailsProjection createCommonDocDetails(
             CommonDocDetailsRequestDTO request,
             MultipartFile file
-    ) {
+    ) throws IOException {
         validateRequest(request);
-        
+        Account account = currentUser.getAccount();
         if (repo.existsByReference(request.getReference())) {
             throw new IllegalArgumentException("Document with this reference already exists");
         }
@@ -69,7 +72,16 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
         applyRequest(doc, request);
         
         if (file != null && !file.isEmpty()) {
-            handleFileUpload(doc, file, request.getReference());
+            String filePath = documentUploadService.uploadFile(file, DOCUMENT_FOLDER);
+            String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+            String originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(), request.getReference(), extension);
+
+            Document document = documentUploadService.initializeDocument(
+                    file.getOriginalFilename(), originalFileName,
+                    file.getContentType(), file.getSize(), filePath, account
+            );
+            documentRepository.save(document);
+      doc.setDocument(document);
         }
         
         CommonDocDetails saved = repo.save(doc);
@@ -87,12 +99,23 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
             Long id,
             CommonDocDetailsRequestDTO request,
             MultipartFile file
-    ) {
+    ) throws IOException {
         CommonDocDetails doc = findByIdOrThrow(id);
         applyRequest(doc, request);
-        
+
         if (file != null && !file.isEmpty()) {
-            handleFileUpdate(doc, file, request.getReference());
+            String extension = documentUploadService.extractFileExtension(file.getOriginalFilename(), file.getContentType());
+            String originalFileName = documentUploadService.generateOriginalFileName(file.getOriginalFilename(), doc.getReference(), extension);
+
+            Document updatedDocument = documentUploadService
+                    .handleFileUpdate(doc.getDocument(), file,DOCUMENT_FOLDER, originalFileName,  doc.getDoneBy())
+                    .map(documentRepository::save)
+                    .orElse(null);
+
+            if (updatedDocument != null) {
+                doc.setDocument(updatedDocument);
+
+            }
         }
         
         CommonDocDetails saved = repo.save(doc);
@@ -173,49 +196,7 @@ public class CommonDocDetailsServiceImpl implements CommonDocDetailsService {
         }
     }
 
-    private void handleFileUpload(CommonDocDetails doc, MultipartFile file, String reference) {
-        try {
-            String filePath = documentUploadService.uploadFile(file, DOCUMENT_FOLDER);
-            String contentType = file.getContentType();
-            long fileSize = file.getSize();
-            String fileExtension = documentUploadService.extractFileExtension(
-                    file.getOriginalFilename(), contentType);
-            String uniqueFileName = Paths.get(filePath).getFileName().toString();
-            String originalFileName = documentUploadService.generateOriginalFileName(
-                    file.getOriginalFilename(), reference, fileExtension);
 
-            Document document = documentUploadService.initializeDocument(
-                    uniqueFileName, originalFileName, contentType, fileSize, filePath, doc.getDoneBy());
-            
-            Document savedDocument = documentRepository.save(document);
-            doc.setDocument(savedDocument);
-            
-        } catch (IOException e) {
-            log.error("File upload failed", e);
-            throw new RuntimeException("Failed to upload file: " + e.getMessage());
-        }
-    }
-
-    private void handleFileUpdate(CommonDocDetails doc, MultipartFile file, String reference) {
-        try {
-            String extension = documentUploadService.extractFileExtension(
-                    file.getOriginalFilename(), file.getContentType());
-            String originalFileName = documentUploadService.generateOriginalFileName(
-                    file.getOriginalFilename(), reference, extension);
-
-            Document updatedDocument = documentUploadService
-                    .handleFileUpdate(doc.getDocument(), file, DOCUMENT_FOLDER, originalFileName, doc.getDoneBy())
-                    .map(documentRepository::save)
-                    .orElse(null);
-
-            if (updatedDocument != null) {
-                doc.setDocument(updatedDocument);
-            }
-        } catch (IOException e) {
-            log.error("File update failed", e);
-            throw new RuntimeException("Failed to update file: " + e.getMessage());
-        }
-    }
 
     private SectionCategory resolveSectionCategory(Long sectionCategoryId) {
         return sectionCategoryRepo.findById(sectionCategoryId)
