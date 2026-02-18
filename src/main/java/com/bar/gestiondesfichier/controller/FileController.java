@@ -24,7 +24,7 @@ import java.util.Optional;
 @CrossOrigin
 @Tag(name = "user", description = "DEPRECATED - Use /api/documents instead")
 @SecurityRequirement(name = "bearerAuth")
-@Deprecated
+//@Deprecated
 public class FileController {
 
     @Autowired
